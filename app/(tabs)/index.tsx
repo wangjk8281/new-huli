@@ -1,0 +1,184 @@
+import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
+
+import {
+  AppScreen,
+  HeaderBlock,
+  IconCircle,
+  PrimaryButton,
+  ProgressBar,
+  RowMeta,
+  SectionTitle,
+  SecondaryButton,
+  Tag,
+  WhiteCard,
+  palette,
+} from '@/components/huxuebao-ui';
+import { useHuxuebao } from '@/contexts/huxuebao-context';
+
+export default function HomeScreen() {
+  const router = useRouter();
+  const { user, activeDirection, directionCourses, weakPoints, streakDays, dailyGoalMinutes, latestExam, aiScenarios } =
+    useHuxuebao();
+
+  const recommendedCourse = directionCourses[0];
+  const weakPoint = weakPoints[0];
+
+  return (
+    <AppScreen>
+      <HeaderBlock
+        title={`早安，${user?.name ?? '护士'}`}
+        subtitle={`${activeDirection?.name ?? '当前路径'} · 今日建议先学 1 节课，再练 6 题`}
+        right={
+          <IconCircle>
+            <Feather color={palette.text} name="bell" size={18} />
+          </IconCircle>
+        }
+      />
+
+      <View style={styles.hero}>
+        <Tag text="今日学习主线" tone="light" />
+        <Text style={styles.heroTitle}>{recommendedCourse?.title ?? '开始你的学习主线'}</Text>
+        <Text style={styles.heroDesc}>{recommendedCourse?.description}</Text>
+        <View style={styles.heroMetaRow}>
+          <View style={styles.heroBadge}>
+            <Text style={styles.heroBadgeText}>{dailyGoalMinutes} 分钟目标</Text>
+          </View>
+          <View style={styles.heroBadge}>
+            <Text style={styles.heroBadgeText}>连续打卡 {streakDays} 天</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.row}>
+        <WhiteCard style={styles.metricCard}>
+          <Text style={styles.metricLabel}>当前方向</Text>
+          <Text style={styles.metricValue}>{activeDirection?.name ?? '未选择'}</Text>
+        </WhiteCard>
+        <WhiteCard style={styles.metricCard}>
+          <Text style={styles.metricLabel}>最近模考</Text>
+          <Text style={styles.metricValue}>{latestExam ? `${latestExam.score} 分` : '未参加'}</Text>
+        </WhiteCard>
+      </View>
+
+      <SectionTitle action="去学习" title="推荐课程" />
+
+      <WhiteCard style={styles.card}>
+        <Tag text={recommendedCourse?.subtitle ?? '课程'} tone="green" />
+        <Text style={styles.cardTitle}>{recommendedCourse?.title}</Text>
+        <Text style={styles.cardDesc}>{recommendedCourse?.completionHint}</Text>
+        <RowMeta
+          left={`${recommendedCourse?.lessons.length ?? 0} 节内容`}
+          right={<PrimaryButton onPress={() => router.push('/course')} text="继续学习" />}
+        />
+      </WhiteCard>
+
+      <SectionTitle action="去练习" title="今日待加强" />
+
+      <WhiteCard style={styles.card}>
+        <Text style={styles.cardTitle}>{weakPoint?.knowledgePoint ?? '继续做题形成画像'}</Text>
+        <Text style={styles.cardDesc}>
+          {weakPoint ? `当前正确率 ${weakPoint.accuracy}% · ${weakPoint.recommendation}` : '完成练习后这里会自动出现弱项回顾。'}
+        </Text>
+        {weakPoint ? <ProgressBar value={weakPoint.accuracy} /> : null}
+        <View style={styles.buttonRow}>
+          <PrimaryButton onPress={() => router.push('/practice')} text="立即刷题" />
+          <SecondaryButton onPress={() => router.push('/course')} text="回看课程" />
+        </View>
+      </WhiteCard>
+
+      <SectionTitle action="V1.0 预告" title="AI 情景演练" />
+
+      <WhiteCard style={styles.card}>
+        <Tag text={`${aiScenarios[0]?.department} · ${aiScenarios[0]?.level}`} tone="peach" />
+        <Text style={styles.cardTitle}>{aiScenarios[0]?.title}</Text>
+        <Text style={styles.cardDesc}>{aiScenarios[0]?.patient}</Text>
+        <Text style={styles.tip}>仅供学习参考，不构成临床诊疗建议。</Text>
+      </WhiteCard>
+    </AppScreen>
+  );
+}
+
+const styles = StyleSheet.create({
+  hero: {
+    borderRadius: 20,
+    padding: 20,
+    gap: 12,
+    backgroundColor: palette.green,
+  },
+  heroTitle: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: -0.4,
+  },
+  heroDesc: {
+    color: '#F3FBF6',
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+  heroMetaRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  heroBadge: {
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF22',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  heroBadgeText: {
+    color: '#F3FBF6',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  metricCard: {
+    flex: 1,
+    padding: 16,
+    gap: 6,
+  },
+  metricLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: palette.muted,
+  },
+  metricValue: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: palette.text,
+    letterSpacing: -0.4,
+  },
+  card: {
+    padding: 18,
+    gap: 12,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: palette.text,
+    letterSpacing: -0.2,
+  },
+  cardDesc: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: palette.muted,
+    fontWeight: '500',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  tip: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: palette.muted,
+    fontWeight: '500',
+  },
+});
