@@ -43,7 +43,7 @@ export default function TabLayout() {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        sceneStyle: { backgroundColor: '#E9E6DF' },
+        sceneStyle: { backgroundColor: palette.bg },
       }}>
       <Tabs.Screen
         name="index"

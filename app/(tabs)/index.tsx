@@ -19,7 +19,17 @@ import { useHuxuebao } from '@/contexts/huxuebao-context';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user, activeDirection, directionCourses, weakPoints, streakDays, dailyGoalMinutes, latestExam, aiScenarios } =
+  const {
+    user,
+    activeDirection,
+    directionCourses,
+    weakPoints,
+    streakDays,
+    dailyGoalMinutes,
+    latestExam,
+    aiScenarios,
+    latestAiSession,
+  } =
     useHuxuebao();
 
   const recommendedCourse = directionCourses[0];
@@ -88,12 +98,21 @@ export default function HomeScreen() {
         </View>
       </WhiteCard>
 
-      <SectionTitle action="V1.0 预告" title="AI 情景演练" />
+      <SectionTitle action={latestAiSession ? `最近 ${latestAiSession.score} 分` : '现在可用'} title="AI 情景演练" />
 
       <WhiteCard style={styles.card}>
         <Tag text={`${aiScenarios[0]?.department} · ${aiScenarios[0]?.level}`} tone="peach" />
         <Text style={styles.cardTitle}>{aiScenarios[0]?.title}</Text>
-        <Text style={styles.cardDesc}>{aiScenarios[0]?.patient}</Text>
+        <Text style={styles.cardDesc}>{latestAiSession ? latestAiSession.nextAction : aiScenarios[0]?.patient}</Text>
+        <View style={styles.aiMetaRow}>
+          <View style={styles.aiBadge}>
+            <Text style={styles.aiBadgeText}>{aiScenarios[0]?.steps.length ?? 0} 轮演练</Text>
+          </View>
+          <View style={styles.aiBadge}>
+            <Text style={styles.aiBadgeText}>通过线 {aiScenarios[0]?.passingScore ?? 0} 分</Text>
+          </View>
+        </View>
+        <PrimaryButton onPress={() => router.push('/ai-drill')} text={latestAiSession ? '继续 AI 演练' : '开始 AI 演练'} />
         <Text style={styles.tip}>仅供学习参考，不构成临床诊疗建议。</Text>
       </WhiteCard>
     </AppScreen>
@@ -180,5 +199,21 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: palette.muted,
     fontWeight: '500',
+  },
+  aiMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  aiBadge: {
+    borderRadius: 999,
+    backgroundColor: palette.greenTint,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  aiBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: palette.green,
   },
 });

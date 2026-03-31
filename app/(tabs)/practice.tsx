@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import {
   AppScreen,
@@ -37,6 +39,7 @@ const modeConfig: {
 ];
 
 export default function PracticeScreen() {
+  const router = useRouter();
   const {
     directionCourses,
     questions,
@@ -48,6 +51,7 @@ export default function PracticeScreen() {
     saveExamResult,
     latestExam,
     aiScenarios,
+    latestAiSession,
   } = useHuxuebao();
   const [session, setSession] = useState<SessionState | null>(null);
   const [lastFeedback, setLastFeedback] = useState<{ correct: boolean; explanation: string; recommendation: string } | null>(
@@ -176,6 +180,26 @@ export default function PracticeScreen() {
     <AppScreen>
       <HeaderBlock title="练习中心" subtitle="章节练习、错题回刷、薄弱点强化和模拟考试" />
 
+      <SectionTitle action={latestAiSession ? `${latestAiSession.accuracy}% 完成度` : '完整演练'} title="AI 情景演练" />
+      <WhiteCard style={styles.listCard}>
+        <Tag text={`${aiScenarios[0].department} · ${aiScenarios[0].level}`} tone="peach" />
+        <Text style={styles.listTitle}>{aiScenarios[0].title}</Text>
+        <Text style={styles.listText}>{latestAiSession ? latestAiSession.nextAction : aiScenarios[0].objective}</Text>
+        <Text style={styles.listText}>评分方式：{aiScenarios[0].scoreRule}</Text>
+        <View style={styles.aiActionRow}>
+          <Tag text={`${aiScenarios[0].steps.length} 轮`} tone="light" />
+          <Pressable onPress={() => router.push('/ai-drill')} style={({ pressed }) => [styles.aiCta, pressed && styles.aiCtaPressed]}>
+            <View style={styles.aiCtaTextWrap}>
+              <Text style={styles.aiCtaEyebrow}>{latestAiSession ? '上次进度已保存' : '真人对话式演练'}</Text>
+              <Text style={styles.aiCtaText}>{latestAiSession ? '继续演练' : '立即开始'}</Text>
+            </View>
+            <View style={styles.aiCtaArrow}>
+              <Ionicons color="#2F7E52" name="arrow-forward" size={18} />
+            </View>
+          </Pressable>
+        </View>
+      </WhiteCard>
+
       <View style={styles.modeList}>
         {modeConfig.map((item) => (
           <Pressable key={item.mode} onPress={() => buildSession(item.mode)}>
@@ -298,19 +322,60 @@ export default function PracticeScreen() {
           </WhiteCard>
         ))}
       </View>
-
-      <SectionTitle action="V1.0" title="AI 情景演练预告" />
-      <WhiteCard style={styles.listCard}>
-        <Tag text={`${aiScenarios[0].department} · ${aiScenarios[0].level}`} tone="peach" />
-        <Text style={styles.listTitle}>{aiScenarios[0].title}</Text>
-        <Text style={styles.listText}>{aiScenarios[0].patient}</Text>
-        <Text style={styles.listText}>评分方式：{aiScenarios[0].scoreRule}</Text>
-      </WhiteCard>
     </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
+  aiActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  aiCta: {
+    minWidth: 188,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 14,
+    borderRadius: 24,
+    backgroundColor: '#2F7E52',
+    paddingLeft: 18,
+    paddingRight: 10,
+    paddingVertical: 12,
+    shadowColor: '#2F7E52',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  aiCtaPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  aiCtaTextWrap: {
+    gap: 2,
+  },
+  aiCtaEyebrow: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#CFEBD9',
+  },
+  aiCtaText: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.4,
+  },
+  aiCtaArrow: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#F2F8F4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   modeList: {
     gap: 12,
   },

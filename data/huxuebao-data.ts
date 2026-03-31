@@ -64,9 +64,40 @@ export type AiScenario = {
   department: string;
   level: string;
   patient: string;
+  patientName: string;
+  patientMeta: string;
+  chiefComplaint: string;
   vitals: string[];
+  vitalCards: {
+    label: string;
+    value: string;
+    unit: string;
+    tone?: 'danger' | 'warning' | 'normal';
+  }[];
   focus: string[];
   scoreRule: string;
+  intro: string;
+  objective: string;
+  timeHint: string;
+  passingScore: number;
+  steps: {
+    id: string;
+    title: string;
+    promptLabel: 'AI患者' | 'AI考官';
+    prompt: string;
+    responseLabel: 'AI患者' | 'AI考官';
+    successReply: string;
+    partialReply: string;
+    failReply: string;
+    successNote: string;
+    partialNote: string;
+    failNote: string;
+    maxScore: number;
+    evaluationGroups: {
+      label: string;
+      keywords: string[];
+    }[];
+  }[];
 };
 
 export const directions: Direction[] = [
@@ -408,13 +439,100 @@ export const examTemplates: ExamTemplate[] = [
 export const aiScenarios: AiScenario[] = [
   {
     id: 'scenario-shock',
-    title: '过敏性休克处理',
+    title: '胸痛急救评估',
     department: '急诊',
     level: '中级',
-    patient: '女性，56 岁，输液后出现皮疹、气促、血压下降',
-    vitals: ['血压 82/54 mmHg', 'SpO2 90%', '心率 118 次/分'],
-    focus: ['首轮评估', '协作呼叫', '循环支持'],
-    scoreRule: '关键步骤缺失重点扣分，追问响应计入流程得分。',
+    patient: '患者：张某，男，55 岁',
+    patientName: '张某',
+    patientMeta: '男，55 岁',
+    chiefComplaint: '胸痛 2 小时，向左肩放射',
+    vitals: ['血压 158/95 mmHg', '心率 102 次/分', 'SpO2 93%', '体温 36.8℃'],
+    vitalCards: [
+      { label: '血压', value: '158/95', unit: 'mmHg', tone: 'danger' },
+      { label: '心率', value: '102', unit: 'bpm', tone: 'warning' },
+      { label: '血氧', value: '93%', unit: 'SpO₂', tone: 'warning' },
+      { label: '体温', value: '36.8°', unit: 'C', tone: 'normal' },
+    ],
+    focus: ['氧合支持', '心电监测', '胸痛评估'],
+    scoreRule: '系统会根据你发给 AI 的处理方案识别关键动作，命中越完整，得分越高。',
+    intro: '患者清醒，胸前区持续压榨样疼痛，情绪紧张，已经开始担心是不是心脏问题。',
+    objective: '先稳定患者，再完成胸痛初步评估、监测和上报。',
+    timeHint: '急诊科 · 中级难度',
+    passingScore: 75,
+    steps: [
+      {
+        id: 'chest-step-1',
+        title: '初步评估',
+        promptLabel: 'AI患者',
+        prompt: '护士，我胸口这里好痛，从两个小时前开始，一直痛到左边肩膀，我现在有点喘不上气。',
+        responseLabel: 'AI患者',
+        successReply: '好的……感觉稍微好了一点点，但胸口还是很痛，我是不是心脏出问题了？',
+        partialReply: '我还是有点喘，胸口痛也没缓下来，你接下来还会帮我做什么？',
+        failReply: '我越来越紧张了，胸口还是很闷，你先别走，我现在到底怎么样？',
+        successNote: '+15分 给氧和首轮安抚处理正确',
+        partialNote: '+8分 只做对了一部分，缺少首轮关键动作',
+        failNote: '+0分 首轮处理太慢，患者没有得到及时支持',
+        maxScore: 15,
+        evaluationGroups: [
+          { label: '氧合支持', keywords: ['吸氧', '给氧', '氧气', '4l', '4l/min', '鼻导管'] },
+          { label: '初步安抚', keywords: ['安抚', '别紧张', '放松', '先别慌'] },
+        ],
+      },
+      {
+        id: 'chest-step-2',
+        title: '监测上报',
+        promptLabel: 'AI考官',
+        prompt: '请继续对患者进行初步评估和处置。你下一步怎么做？',
+        responseLabel: 'AI患者',
+        successReply: '好的，现在有人在给我接监护，我安心一点了，不过胸口还是发紧。',
+        partialReply: '你是在看我情况，但我不太确定现在是不是很严重。',
+        failReply: '护士，我胸口还是这么痛，你是不是还没叫医生来看我？',
+        successNote: '+15分 心电监测和呼叫上报到位',
+        partialNote: '+8分 监测或上报只覆盖了一部分',
+        failNote: '+0分 缺少关键监测和上报动作',
+        maxScore: 15,
+        evaluationGroups: [
+          { label: '心电监测', keywords: ['心电图', '心电监护', '监护', '监测'] },
+          { label: '通知医生', keywords: ['通知医生', '呼叫医生', '上报医生', '叫医生'] },
+        ],
+      },
+      {
+        id: 'chest-step-3',
+        title: '病史追问',
+        promptLabel: 'AI患者',
+        prompt: '我会不会是心梗啊？这种痛一直压着，左肩也在痛。',
+        responseLabel: 'AI考官',
+        successReply: '继续。现在请补充胸痛相关病情信息，并判断是否需要重点关注急性心血管风险。',
+        partialReply: '你有在问病情，但还不够聚焦。请继续补充关键胸痛信息。',
+        failReply: '你现在还没有抓到重点。胸痛病人的核心病史需要马上补充。',
+        successNote: '+10分 胸痛重点病史追问准确',
+        partialNote: '+5分 追问方向部分正确',
+        failNote: '+0分 没有抓到胸痛风险重点',
+        maxScore: 10,
+        evaluationGroups: [
+          { label: '疼痛评估', keywords: ['疼痛', '几分', '性质', '压榨', '持续'] },
+          { label: '高危识别', keywords: ['心梗', '冠心病', '急性冠脉', '风险'] },
+        ],
+      },
+      {
+        id: 'chest-step-4',
+        title: '继续处置',
+        promptLabel: 'AI考官',
+        prompt: '医生还在赶来途中。此时你准备继续怎么做，才能保证患者安全？',
+        responseLabel: 'AI患者',
+        successReply: '好，我现在能感觉到你们在持续看着我。虽然还痛，但没有刚才那么慌了。',
+        partialReply: '你在处理，但我还是不太确定接下来会不会突然加重。',
+        failReply: '我还是很不舒服，感觉没有人持续盯着我。',
+        successNote: '+15分 持续观察和安全处置完整',
+        partialNote: '+8分 后续处置不够完整',
+        failNote: '+0分 缺少持续观察和安全保障',
+        maxScore: 15,
+        evaluationGroups: [
+          { label: '持续观察', keywords: ['复查', '继续观察', '持续监测', '观察生命体征'] },
+          { label: '建立通路', keywords: ['静脉通路', '开通静脉', '留置针', '建立通路'] },
+        ],
+      },
+    ],
   },
   {
     id: 'scenario-vent',
@@ -422,9 +540,96 @@ export const aiScenarios: AiScenario[] = [
     department: 'ICU',
     level: '初级',
     patient: '男性，67 岁，机械通气中突发高压报警',
+    patientName: '王某',
+    patientMeta: '男，67 岁',
+    chiefComplaint: '机械通气中突发高压报警',
     vitals: ['SpO2 88%', '呼吸频率 28 次/分', '躁动增加'],
+    vitalCards: [
+      { label: '血氧', value: '88%', unit: 'SpO₂', tone: 'danger' },
+      { label: '呼吸', value: '28', unit: '次/分', tone: 'warning' },
+      { label: '报警', value: '高压', unit: '提示', tone: 'warning' },
+      { label: '意识', value: '躁动', unit: '状态', tone: 'warning' },
+    ],
     focus: ['先患者后设备', '吸痰准备', '复查生命体征'],
-    scoreRule: '按标准步骤逐项评分，顺序错误会扣减流程分。',
+    scoreRule: '你发给 AI 的每一句处理方案，系统都会按关键动作识别并即时评分。',
+    intro: '床旁持续高压报警，患者胸廓起伏变差，呼吸机回路暂未见明显脱落。',
+    objective: '判断患者风险，排查高压报警原因，并完成安全处置与复查。',
+    timeHint: 'ICU · 初级难度',
+    passingScore: 75,
+    steps: [
+      {
+        id: 'vent-step-1',
+        title: '先看患者',
+        promptLabel: 'AI考官',
+        prompt: '呼吸机高压报警响起，患者血氧下降到 88%。你第一步打算怎么处理？',
+        responseLabel: 'AI考官',
+        successReply: '可以。你先看患者再看设备，顺序是对的。继续往下处理。',
+        partialReply: '你提到了一部分，但还没把患者风险放在最前面。',
+        failReply: '这一步顺序不对。高压报警时不能先动参数，应该先看患者状态。',
+        successNote: '+15分 先患者后设备的顺序正确',
+        partialNote: '+8分 只覆盖了一部分首轮判断',
+        failNote: '+0分 顺序错误，先看患者这一步缺失',
+        maxScore: 15,
+        evaluationGroups: [
+          { label: '评估患者', keywords: ['看患者', '观察患者', '血氧', '呼吸', '胸廓'] },
+          { label: '暂不改参数', keywords: ['先不调参数', '再看机器', '检查报警原因'] },
+        ],
+      },
+      {
+        id: 'vent-step-2',
+        title: '判断原因',
+        promptLabel: 'AI患者',
+        prompt: '我现在喘得更厉害了，喉咙像堵住一样，机器一直响。',
+        responseLabel: 'AI考官',
+        successReply: '判断方向对。高压报警合并痰鸣音时，要优先考虑分泌物堵塞并准备吸痰。',
+        partialReply: '你开始考虑原因了，但还不够聚焦在最常见的高压风险上。',
+        failReply: '这一步没有抓到关键。现在最需要先考虑气道阻力增高和分泌物问题。',
+        successNote: '+15分 高压报警原因判断准确',
+        partialNote: '+8分 只判断到部分原因',
+        failNote: '+0分 没有抓到高压报警重点',
+        maxScore: 15,
+        evaluationGroups: [
+          { label: '分泌物堵塞', keywords: ['痰', '分泌物', '堵塞', '痰鸣音'] },
+          { label: '吸痰准备', keywords: ['吸痰', '负压', '吸痰管', '无菌'] },
+        ],
+      },
+      {
+        id: 'vent-step-3',
+        title: '执行处理',
+        promptLabel: 'AI考官',
+        prompt: '吸痰准备已经到位。现在你准备怎样实施，才能尽量避免新的风险？',
+        responseLabel: 'AI考官',
+        successReply: '操作思路稳。吸痰时要控制时间和刺激强度，同时盯着血氧变化。',
+        partialReply: '你说到了处理动作，但过程中的安全控制还不够完整。',
+        failReply: '这一步风险很大。吸痰不能只顾动作本身，还要控制时长并持续观察。',
+        successNote: '+10分 操作过程和安全控制正确',
+        partialNote: '+5分 处理动作对了一半',
+        failNote: '+0分 操作过程存在明显风险',
+        maxScore: 10,
+        evaluationGroups: [
+          { label: '控制时长', keywords: ['时间', '控制时长', '轻柔', '避免反复'] },
+          { label: '过程监测', keywords: ['观察血氧', '看血氧', '患者反应', '监测'] },
+        ],
+      },
+      {
+        id: 'vent-step-4',
+        title: '处理后复查',
+        promptLabel: 'AI患者',
+        prompt: '现在机器不怎么响了，我呼吸也顺一点了。是不是已经没事了？',
+        responseLabel: 'AI考官',
+        successReply: '很好。报警解除后继续复查血氧、呼吸音和报警状态，这一步不能省。',
+        partialReply: '你知道要收尾，但复查和记录还不够完整。',
+        failReply: '不能直接结束。报警停了不代表患者已经稳定，复查仍然是必须动作。',
+        successNote: '+10分 复查和记录动作完整',
+        partialNote: '+5分 收尾动作不够完整',
+        failNote: '+0分 漏掉了复查收口',
+        maxScore: 10,
+        evaluationGroups: [
+          { label: '复查状态', keywords: ['复查', '血氧', '呼吸音', '报警状态'] },
+          { label: '补记录', keywords: ['记录', '观察', '继续观察', '交接'] },
+        ],
+      },
+    ],
   },
 ];
 

@@ -23,6 +23,7 @@ export default function ReportScreen() {
     streakDays,
     weakPoints,
     latestExam,
+    latestAiSession,
     lessonCompletionCount,
     activeDirection,
     logout,
@@ -87,6 +88,20 @@ export default function ReportScreen() {
             ? '已满足基础领取条件，可用于下载、分享和编码验真展示。'
             : '需要模考达到 85 分后解锁证书。'}
         </Text>
+      </WhiteCard>
+
+      <SectionTitle title="AI 演练表现" />
+      <WhiteCard style={styles.card}>
+        <Tag text={latestAiSession ? '最新结果' : '待开始'} tone={latestAiSession ? 'green' : 'peach'} />
+        <Text style={styles.cardTitle}>
+          {latestAiSession ? `${latestAiSession.title} · ${latestAiSession.score} 分` : '还没有 AI 演练记录'}
+        </Text>
+        <Text style={styles.cardText}>
+          {latestAiSession
+            ? latestAiSession.nextAction
+            : '建议先完成 1 次 AI 情景演练，系统会把结果同步到这里。'}
+        </Text>
+        <PrimaryButton onPress={() => router.push('/ai-drill')} text={latestAiSession ? '再练一次' : '去开始'} />
       </WhiteCard>
 
       <SectionTitle title="打卡与学习计划" />

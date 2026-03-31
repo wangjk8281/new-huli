@@ -41,6 +41,20 @@ type WeakPoint = {
   recommendation: string;
 };
 
+type AiSessionRecord = {
+  scenarioId: string;
+  title: string;
+  department: string;
+  level: string;
+  score: number;
+  maxScore: number;
+  accuracy: number;
+  completedAt: string;
+  strengths: string[];
+  misses: string[];
+  nextAction: string;
+};
+
 type HuxuebaoContextValue = {
   user: UserProfile | null;
   directions: typeof directions;
@@ -59,6 +73,8 @@ type HuxuebaoContextValue = {
   dailyGoalMinutes: number;
   streakDays: number;
   aiScenarios: typeof aiScenarios;
+  aiSessionRecords: AiSessionRecord[];
+  latestAiSession: AiSessionRecord | null;
   login: (name?: string) => void;
   logout: () => void;
   selectDirection: (directionId: string) => void;
@@ -66,6 +82,7 @@ type HuxuebaoContextValue = {
   submitAnswer: (questionId: string, selectedIds: string[], source: PracticeMode) => boolean;
   markWrongQuestionMastered: (questionId: string) => void;
   saveExamResult: (examId: string, correctCount: number, totalCount: number) => void;
+  saveAiSession: (record: Omit<AiSessionRecord, 'accuracy' | 'completedAt'>) => void;
   setDailyGoalMinutes: (minutes: number) => void;
   questions: typeof questions;
   examTemplates: typeof examTemplates;
@@ -88,6 +105,7 @@ export function HuxuebaoProvider({ children }: PropsWithChildren) {
       totalCount: 5,
     },
   ]);
+  const [aiSessionRecords, setAiSessionRecords] = useState<AiSessionRecord[]>([]);
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState(30);
   const [streakDays] = useState(21);
 
@@ -157,6 +175,7 @@ export function HuxuebaoProvider({ children }: PropsWithChildren) {
   }, [attempts]);
 
   const latestExam = examRecords[0] ?? null;
+  const latestAiSession = aiSessionRecords[0] ?? null;
 
   const lessonCompletionCount = completedLessonIds.length;
 
@@ -179,6 +198,8 @@ export function HuxuebaoProvider({ children }: PropsWithChildren) {
       dailyGoalMinutes,
       streakDays,
       aiScenarios,
+      aiSessionRecords,
+      latestAiSession,
       login: (name = '林护士') => {
         setUser({
           name,
@@ -243,6 +264,18 @@ export function HuxuebaoProvider({ children }: PropsWithChildren) {
           ...current,
         ]);
       },
+      saveAiSession: (record) => {
+        setAiSessionRecords((current) => [
+          {
+            ...record,
+            accuracy: Math.round((record.score / record.maxScore) * 100),
+            completedAt: new Date().toLocaleString('zh-CN', {
+              hour12: false,
+            }),
+          },
+          ...current,
+        ]);
+      },
       setDailyGoalMinutes,
       questions,
       examTemplates,
@@ -251,10 +284,12 @@ export function HuxuebaoProvider({ children }: PropsWithChildren) {
       activeCourse,
       activeDirection,
       attempts,
+      aiSessionRecords,
       completedLessonIds,
       dailyGoalMinutes,
       directionCourses,
       examRecords,
+      latestAiSession,
       latestExam,
       lessonCompletionCount,
       selectedDirectionId,

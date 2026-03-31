@@ -1,0 +1,767 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { SecondaryButton, Tag, WhiteCard, palette } from '@/components/huxuebao-ui';
+import { useHuxuebao } from '@/contexts/huxuebao-context';
+import type { AiScenario } from '@/data/huxuebao-data';
+import { requestAiTurn } from '@/lib/openrouter';
+
+type ChatMessage = {
+  id: string;
+  speaker: 'AI患者' | 'AI考官' | '你';
+  text: string;
+  kind: 'bubble' | 'score';
+};
+
+type RoundResult = {
+  stepId: string;
+  score: number;
+  maxScore: number;
+  matched: string[];
+  missed: string[];
+};
+
+type ChatSession = {
+  scenarioId: string;
+  stepIndex: number;
+  score: number;
+  messages: ChatMessage[];
+  rounds: RoundResult[];
+  completed: boolean;
+  waiting: boolean;
+};
+
+export default function AiDrillScreen() {
+  const router = useRouter();
+  const scrollRef = useRef<ScrollView | null>(null);
+  const { aiScenarios, saveAiSession } = useHuxuebao();
+  const [selectedScenarioId, setSelectedScenarioId] = useState(aiScenarios[0]?.id ?? '');
+  const [session, setSession] = useState<ChatSession | null>(null);
+  const [draft, setDraft] = useState('');
+  const [errorText, setErrorText] = useState('');
+
+  const selectedScenario =
+    aiScenarios.find((scenario) => scenario.id === selectedScenarioId) ?? aiScenarios[0];
+
+  const summary = useMemo(() => {
+    if (!selectedScenario || !session?.completed) {
+      return null;
+    }
+
+    return summarizeConversation(selectedScenario, session.rounds, session.score);
+  }, [selectedScenario, session]);
+
+  useEffect(() => {
+    if (!selectedScenario) {
+      return;
+    }
+
+    setDraft('');
+    setErrorText('');
+    setSession(buildInitialSession(selectedScenario));
+  }, [selectedScenarioId, selectedScenario]);
+
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 30);
+
+    return () => clearTimeout(timer);
+  }, [session]);
+
+  const handleSend = async () => {
+    if (!selectedScenario || !session || session.completed || session.waiting) {
+      return;
+    }
+
+    const content = draft.trim();
+
+    if (!content) {
+      return;
+    }
+
+    const step = selectedScenario.steps[session.stepIndex];
+    const invalidReason = detectInvalidClinicalInput(content, step);
+
+    if (invalidReason) {
+      console.log('[AI] screen:skip-invalid', {
+        scenarioId: selectedScenario.id,
+        stepId: step.id,
+        content,
+        reason: invalidReason,
+      });
+      setSession({
+        ...session,
+        messages: [
+          ...session.messages,
+          createBubbleMessage('你', content),
+          createBubbleMessage('AI考官', invalidReason),
+          createScoreMessage('0分 输入不是有效处置方案，请重新输入'),
+        ],
+      });
+      setDraft('');
+      setErrorText('');
+      return;
+    }
+
+    const nextHistory = [...session.messages, createBubbleMessage('你', content)];
+
+    console.log('[AI] screen:send', {
+      scenarioId: selectedScenario.id,
+      stepId: step.id,
+      content,
+      historyCount: nextHistory.length,
+    });
+
+    setErrorText('');
+    setSession({
+      ...session,
+      waiting: true,
+      messages: nextHistory,
+    });
+    setDraft('');
+
+    try {
+      const aiTurn = await requestAiTurn({
+        scenario: selectedScenario,
+        step,
+        history: nextHistory.map((message) => ({
+          speaker: message.speaker,
+          text: message.text,
+        })),
+        userInput: content,
+      });
+      console.log('[AI] screen:result', aiTurn);
+      const nextRounds = [
+        ...session.rounds,
+        {
+          stepId: step.id,
+          score: aiTurn.scoreDelta,
+          maxScore: step.maxScore,
+          matched: aiTurn.matched,
+          missed: aiTurn.missed,
+        },
+      ];
+      const totalScore = session.score + aiTurn.scoreDelta;
+      const nextMessages: ChatMessage[] = [
+        ...nextHistory,
+        createBubbleMessage(aiTurn.replyLabel, aiTurn.reply),
+        createScoreMessage(aiTurn.scoreNote),
+      ];
+      const isLastStep = session.stepIndex === selectedScenario.steps.length - 1;
+
+      if (isLastStep) {
+        const finalSummary = summarizeConversation(selectedScenario, nextRounds, totalScore);
+
+        saveAiSession({
+          scenarioId: selectedScenario.id,
+          title: selectedScenario.title,
+          department: selectedScenario.department,
+          level: selectedScenario.level,
+          score: totalScore,
+          maxScore: finalSummary.maxScore,
+          strengths: finalSummary.strengths,
+          misses: finalSummary.misses,
+          nextAction: finalSummary.nextAction,
+        });
+
+        setSession({
+          ...session,
+          score: totalScore,
+          rounds: nextRounds,
+          messages: [
+            ...nextMessages,
+            createBubbleMessage(
+              'AI考官',
+              `本轮演练结束。你拿到 ${totalScore} / ${finalSummary.maxScore} 分，我已经把结果整理好了。`
+            ),
+          ],
+          completed: true,
+          waiting: false,
+        });
+        return;
+      }
+
+      const nextStep = selectedScenario.steps[session.stepIndex + 1];
+
+      setSession({
+        scenarioId: session.scenarioId,
+        stepIndex: session.stepIndex + 1,
+        score: totalScore,
+        rounds: nextRounds,
+        completed: false,
+        waiting: false,
+        messages: [...nextMessages, createBubbleMessage(nextStep.promptLabel, nextStep.prompt)],
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'AI 暂时没有响应';
+
+      setErrorText(message);
+      console.log('[AI] screen:error', { message });
+      setSession({
+        ...session,
+        waiting: false,
+        messages: session.messages,
+      });
+      setDraft(content);
+    }
+  };
+
+  const resetConversation = () => {
+    if (!selectedScenario) {
+      return;
+    }
+
+    setDraft('');
+    setErrorText('');
+    setSession(buildInitialSession(selectedScenario));
+  };
+
+  if (!selectedScenario || !session) {
+    return null;
+  }
+
+  return (
+    <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={styles.safeArea}>
+      <View style={styles.screen}>
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()} style={styles.headerButton}>
+            <Ionicons color="#27456B" name="arrow-back" size={24} />
+          </Pressable>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>AI情景演练</Text>
+            <Text style={styles.headerSubtitle}>
+              {selectedScenario.department}科 · {selectedScenario.level}难度
+            </Text>
+          </View>
+          <View style={styles.headerButton}>
+            <Ionicons color="#4E79F7" name="help-circle-outline" size={26} />
+          </View>
+        </View>
+
+        <View style={styles.scenarioSwitch}>
+          {aiScenarios.map((scenario) => (
+            <SecondaryButton
+              key={scenario.id}
+              onPress={() => setSelectedScenarioId(scenario.id)}
+              selected={selectedScenarioId === scenario.id}
+              text={scenario.department}
+            />
+          ))}
+        </View>
+
+        <WhiteCard style={styles.patientCard}>
+          <View style={styles.patientTopRow}>
+            <View style={styles.avatar}>
+              <Ionicons color="#FFFFFF" name="person-outline" size={24} />
+            </View>
+            <View style={styles.patientInfo}>
+              <Text style={styles.patientName}>
+                患者: {selectedScenario.patientName}，{selectedScenario.patientMeta}
+              </Text>
+              <Text style={styles.patientComplaint}>主诉: {selectedScenario.chiefComplaint}</Text>
+            </View>
+          </View>
+          <View style={styles.vitalGrid}>
+            {selectedScenario.vitalCards.map((item) => (
+              <View key={`${item.label}-${item.value}`} style={styles.vitalCard}>
+                <Text
+                  style={[
+                    styles.vitalValue,
+                    item.tone === 'danger' && styles.vitalValueDanger,
+                    item.tone === 'warning' && styles.vitalValueWarning,
+                  ]}>
+                  {item.value}
+                </Text>
+                <Text style={styles.vitalLabel}>
+                  {item.label} {item.unit}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </WhiteCard>
+
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.chatContent}
+          showsVerticalScrollIndicator={false}
+          style={styles.chatScroll}>
+          {session.messages.map((message) =>
+            message.kind === 'score' ? (
+              <View key={message.id} style={styles.scoreRow}>
+                <View style={styles.scoreChip}>
+                  <Ionicons color="#15A34A" name="checkmark-circle" size={20} />
+                  <Text style={styles.scoreChipText}>{message.text}</Text>
+                </View>
+              </View>
+            ) : (
+              <View
+                key={message.id}
+                style={[
+                  styles.messageWrap,
+                  message.speaker === '你' ? styles.messageWrapUser : styles.messageWrapAi,
+                ]}>
+                <Text
+                  style={[
+                    styles.messageLabel,
+                    message.speaker === '你' ? styles.messageLabelUser : styles.messageLabelAi,
+                  ]}>
+                  {message.speaker}
+                </Text>
+                <View
+                  style={[
+                    styles.messageBubble,
+                    message.speaker === '你' ? styles.messageBubbleUser : styles.messageBubbleAi,
+                  ]}>
+                  <Text
+                    style={[
+                      styles.messageText,
+                      message.speaker === '你' && styles.messageTextUser,
+                    ]}>
+                    {message.text}
+                  </Text>
+                </View>
+              </View>
+            )
+          )}
+
+          {summary ? (
+            <WhiteCard style={styles.summaryCard}>
+              <View style={styles.summaryTop}>
+                <Tag
+                  text={summary.score >= selectedScenario.passingScore ? '已达标' : '待加强'}
+                  tone={summary.score >= selectedScenario.passingScore ? 'green' : 'peach'}
+                />
+                <Text style={styles.summaryScore}>
+                  {summary.score} / {summary.maxScore}
+                </Text>
+              </View>
+              <Text style={styles.summaryText}>{summary.summary}</Text>
+              <Text style={styles.summaryLabel}>这轮做得比较稳</Text>
+              {summary.strengths.map((item) => (
+                <Text key={item} style={styles.summaryItem}>
+                  {`• ${item}`}
+                </Text>
+              ))}
+              <Text style={styles.summaryLabel}>下一步建议</Text>
+              <Text style={styles.summaryAdvice}>{summary.nextAction}</Text>
+              <Pressable onPress={resetConversation} style={styles.restartButton}>
+                <Text style={styles.restartButtonText}>重新开始这一轮</Text>
+              </Pressable>
+            </WhiteCard>
+          ) : null}
+        </ScrollView>
+
+        <View style={styles.composerArea}>
+          <Text style={styles.helperText}>
+            {session.completed
+              ? '本轮已结束，你可以切换场景或重新开始。'
+              : session.waiting
+                ? 'AI 正在回复，请稍等。'
+                : selectedScenario.objective}
+          </Text>
+          {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
+          <View style={styles.composer}>
+            <TextInput
+              editable={!session.completed && !session.waiting}
+              onChangeText={setDraft}
+              placeholder="输入处置方案..."
+              placeholderTextColor="#9AA9C3"
+              style={styles.input}
+              value={draft}
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
+            <Pressable
+              disabled={session.completed || session.waiting || !draft.trim()}
+              onPress={handleSend}
+              style={[
+                styles.sendButton,
+                (session.completed || session.waiting || !draft.trim()) && styles.sendButtonDisabled,
+              ]}>
+              <Ionicons color="#FFFFFF" name="paper-plane-outline" size={22} />
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function buildInitialSession(scenario: AiScenario): ChatSession {
+  const firstStep = scenario.steps[0];
+
+  return {
+    scenarioId: scenario.id,
+    stepIndex: 0,
+    score: 0,
+    rounds: [],
+    completed: false,
+    waiting: false,
+    messages: [createBubbleMessage(firstStep.promptLabel, firstStep.prompt)],
+  };
+}
+
+function createBubbleMessage(speaker: ChatMessage['speaker'], text: string): ChatMessage {
+  return {
+    id: `${speaker}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    speaker,
+    text,
+    kind: 'bubble',
+  };
+}
+
+function createScoreMessage(text: string): ChatMessage {
+  return {
+    id: `score-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    speaker: 'AI考官',
+    text,
+    kind: 'score',
+  };
+}
+
+function summarizeConversation(
+  scenario: AiScenario,
+  rounds: RoundResult[],
+  score: number
+) {
+  const maxScore = rounds.reduce((total, round) => total + round.maxScore, 0);
+  const strengths = uniqueList(rounds.flatMap((round) => round.matched));
+  const misses = uniqueList(
+    rounds
+      .flatMap((round) => round.missed)
+      .filter((item) => !strengths.includes(item))
+  );
+  const summary =
+    score >= scenario.passingScore
+      ? `你这轮整体处理顺序比较稳，核心动作基本都抓住了，已经接近真实床旁沟通的节奏。`
+      : `你已经有一些关键动作意识了，但处理顺序和关键点还不够完整，继续练会明显更顺。`;
+  const nextAction =
+    misses.length > 0
+      ? `优先补上 ${misses.slice(0, 2).join('、')}，然后再把 ${scenario.title} 重新完整走一遍。`
+      : `可以切到 ${scenario.focus.join('、')} 相关场景继续往上练。`;
+
+  return {
+    score,
+    maxScore,
+    strengths: strengths.length > 0 ? strengths : scenario.focus,
+    misses,
+    summary,
+    nextAction,
+  };
+}
+
+function uniqueList(items: string[]) {
+  return Array.from(new Set(items));
+}
+
+function detectInvalidClinicalInput(text: string, step: AiScenario['steps'][number]) {
+  const raw = text.trim();
+  const normalized = raw.toLowerCase();
+  const compact = normalized.replace(/\s+/g, '');
+  const hasChinese = /[\u4e00-\u9fff]/.test(raw);
+  const lettersAndDigitsOnly = /^[a-z0-9._\-+]+$/i.test(compact);
+  const matchedGroups = step.evaluationGroups.filter((group) =>
+    group.keywords.some((keyword) => compact.includes(keyword.toLowerCase().replace(/\s+/g, '')))
+  );
+
+  if (!raw) {
+    return '请先输入你的处置方案。';
+  }
+
+  if (lettersAndDigitsOnly && matchedGroups.length === 0) {
+    return '你刚才这句看起来不是有效处置方案，请直接输入你准备怎么处理患者。';
+  }
+
+  if (!hasChinese && matchedGroups.length === 0 && raw.length < 12) {
+    return '这句内容太像无效输入了，请直接描述你的处理动作，比如吸氧、监测、通知医生。';
+  }
+
+  return null;
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#EAF1FC',
+  },
+  screen: {
+    flex: 1,
+    backgroundColor: '#EAF1FC',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+    gap: 14,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFFCC',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#223C63',
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8A9AB8',
+  },
+  scenarioSwitch: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  patientCard: {
+    padding: 16,
+    gap: 16,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+  },
+  patientTopRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FA7E94',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  patientInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  patientName: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#223C63',
+  },
+  patientComplaint: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '600',
+    color: '#8A9AB8',
+  },
+  vitalGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  vitalCard: {
+    flex: 1,
+    borderRadius: 18,
+    backgroundColor: '#F6F8FC',
+    paddingVertical: 12,
+    alignItems: 'center',
+    gap: 4,
+  },
+  vitalValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#2E4C77',
+  },
+  vitalValueDanger: {
+    color: '#F35C5C',
+  },
+  vitalValueWarning: {
+    color: '#F59E0B',
+  },
+  vitalLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#95A5BF',
+  },
+  chatScroll: {
+    flex: 1,
+  },
+  chatContent: {
+    gap: 14,
+    paddingBottom: 8,
+  },
+  messageWrap: {
+    gap: 6,
+  },
+  messageWrapAi: {
+    alignItems: 'flex-start',
+  },
+  messageWrapUser: {
+    alignItems: 'flex-end',
+  },
+  messageLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  messageLabelAi: {
+    color: '#98A8C0',
+  },
+  messageLabelUser: {
+    color: '#8498B7',
+  },
+  messageBubble: {
+    maxWidth: '88%',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  messageBubbleAi: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 8,
+  },
+  messageBubbleUser: {
+    backgroundColor: '#4E6CF8',
+    borderTopRightRadius: 8,
+  },
+  messageText: {
+    fontSize: 15,
+    lineHeight: 24,
+    fontWeight: '700',
+    color: '#223C63',
+  },
+  messageTextUser: {
+    color: '#FFFFFF',
+  },
+  scoreRow: {
+    alignItems: 'flex-start',
+  },
+  scoreChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#9EE6B3',
+    backgroundColor: '#E9FBEF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  scoreChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#15803D',
+  },
+  summaryCard: {
+    padding: 16,
+    gap: 10,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+  },
+  summaryTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  summaryScore: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#223C63',
+  },
+  summaryText: {
+    fontSize: 14,
+    lineHeight: 21,
+    fontWeight: '600',
+    color: '#61748F',
+  },
+  summaryLabel: {
+    marginTop: 4,
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#223C63',
+  },
+  summaryItem: {
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: '600',
+    color: '#61748F',
+  },
+  summaryAdvice: {
+    fontSize: 14,
+    lineHeight: 21,
+    fontWeight: '700',
+    color: '#355CA8',
+  },
+  restartButton: {
+    marginTop: 6,
+    borderRadius: 16,
+    backgroundColor: '#EEF4FF',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  restartButtonText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#355CA8',
+  },
+  composerArea: {
+    gap: 10,
+  },
+  helperText: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '600',
+    color: '#8FA1BE',
+  },
+  errorText: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '700',
+    color: '#D9485F',
+  },
+  composer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  input: {
+    flex: 1,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: '#D5DFF0',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    fontSize: 16,
+    fontWeight: '600',
+    color: palette.text,
+  },
+  sendButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4E6CF8',
+  },
+  sendButtonDisabled: {
+    opacity: 0.45,
+  },
+});

@@ -1,4 +1,3 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
@@ -25,37 +24,19 @@ type AppScreenProps = PropsWithChildren<{
 }>;
 
 export function AppScreen({ children, scroll = true, contentStyle }: AppScreenProps) {
-  const body = (
-    <View style={styles.phoneFrame}>
-      <StatusRow />
+  return (
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
       {scroll ? (
         <ScrollView
           contentContainerStyle={[styles.scrollContent, contentStyle]}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          style={styles.fill}>
           {children}
         </ScrollView>
       ) : (
         <View style={[styles.scrollContent, styles.fill, contentStyle]}>{children}</View>
       )}
-    </View>
-  );
-
-  return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <View style={styles.canvas}>{body}</View>
     </SafeAreaView>
-  );
-}
-
-export function StatusRow() {
-  return (
-    <View style={styles.statusRow}>
-      <Text style={styles.statusTime}>9:41</Text>
-      <View style={styles.statusIcons}>
-        <Feather color={palette.text} name="wifi" size={14} />
-        <Ionicons color={palette.text} name="battery-full-outline" size={16} />
-      </View>
-    </View>
   );
 }
 
@@ -197,50 +178,13 @@ export function ProgressBar({ value }: { value: number }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#E9E6DF',
-  },
-  canvas: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: '#E9E6DF',
-    paddingHorizontal: 12,
-    paddingTop: 12,
+    backgroundColor: palette.bg,
   },
   fill: {
     flex: 1,
   },
-  phoneFrame: {
-    flex: 1,
-    width: '100%',
-    maxWidth: 402,
-    backgroundColor: palette.bg,
-    borderRadius: 24,
-    shadowColor: '#1A1918',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 10,
-    overflow: 'hidden',
-  },
-  statusRow: {
-    height: 62,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-  },
-  statusTime: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  statusIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   scrollContent: {
-    paddingTop: 12,
+    paddingTop: 20,
     paddingHorizontal: 24,
     paddingBottom: 176,
     gap: 18,
@@ -341,16 +285,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 999,
     backgroundColor: palette.green,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    minHeight: 68,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
   },
   primaryButtonDisabled: {
     opacity: 0.45,
   },
   primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
   },
   secondaryButton: {
     alignItems: 'center',
@@ -359,8 +304,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.line,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    minHeight: 68,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
   },
   secondaryButtonSelected: {
     borderColor: '#CFE8D8',
@@ -368,8 +314,8 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: palette.text,
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
   },
   secondaryButtonTextSelected: {
     color: palette.green,

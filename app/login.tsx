@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { AppScreen, PrimaryButton, SecondaryButton, Tag, WhiteCard, palette } from '@/components/huxuebao-ui';
@@ -43,20 +43,6 @@ export default function LoginScreen() {
         <PrimaryButton onPress={handleLogin} text="进入护学宝" />
         <SecondaryButton onPress={() => setName('林护士')} text="恢复默认账号" />
       </WhiteCard>
-
-      <WhiteCard style={styles.card}>
-        <Text style={styles.infoTitle}>本次已落地的主流程</Text>
-        <View style={styles.checkList}>
-          {['登录', '学习方向选择', '课程学习', '刷题练习', '错题与薄弱点', '模拟考试', '学习报告'].map(
-            (item) => (
-              <Pressable key={item} style={styles.checkItem}>
-                <View style={styles.dot} />
-                <Text style={styles.checkText}>{item}</Text>
-              </Pressable>
-            )
-          )}
-        </View>
-      </WhiteCard>
     </AppScreen>
   );
 }
@@ -67,26 +53,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   hero: {
-    gap: 10,
-  },
-  title: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: palette.text,
-    letterSpacing: -0.8,
-  },
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: palette.muted,
-    fontWeight: '500',
-  },
-  card: {
-    padding: 18,
     gap: 14,
   },
+  title: {
+    fontSize: 48,
+    fontWeight: '800',
+    color: palette.text,
+    letterSpacing: -1.2,
+  },
+  subtitle: {
+    fontSize: 18,
+    lineHeight: 28,
+    color: palette.muted,
+    fontWeight: '600',
+  },
+  card: {
+    padding: 22,
+    gap: 18,
+  },
   label: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '700',
     color: palette.text,
   },
@@ -95,45 +81,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.line,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    fontSize: 18,
+    fontWeight: '600',
     color: palette.text,
   },
   infoBlock: {
     borderRadius: 16,
     backgroundColor: palette.greenTint,
-    padding: 14,
-    gap: 4,
+    padding: 18,
+    gap: 8,
   },
   infoTitle: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '700',
     color: palette.text,
   },
   infoText: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 16,
+    lineHeight: 24,
     color: palette.muted,
-    fontWeight: '500',
-  },
-  checkList: {
-    gap: 10,
-  },
-  checkItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: palette.green,
-  },
-  checkText: {
-    fontSize: 14,
-    color: palette.text,
     fontWeight: '600',
   },
 });
