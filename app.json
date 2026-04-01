@@ -1,15 +1,20 @@
 {
   "expo": {
-    "name": "pencil-new-app",
-    "slug": "pencil-new-app",
+    "name": "护学宝",
+    "slug": "huxuebao",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "pencilnewapp",
+    "icon": "./assets/yahao.png",
+    "scheme": "huxuebao",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.zwj.huxuebao",
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -43,6 +48,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d32674a4-dfde-4fab-be18-bb633ab1e732"
+      }
+    },
+    "owner": "ryanmkui"
   }
 }
