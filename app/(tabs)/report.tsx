@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   AppScreen,
@@ -7,7 +7,6 @@ import {
   PrimaryButton,
   ProgressBar,
   SectionTitle,
-  SecondaryButton,
   Tag,
   WhiteCard,
   palette,
@@ -112,12 +111,18 @@ export default function ReportScreen() {
             const active = dailyGoalMinutes === minute;
 
             return (
-              <SecondaryButton
+              <Pressable
                 key={minute}
                 onPress={() => setDailyGoalMinutes(minute)}
-                selected={active}
-                text={active ? `${minute} 分钟` : `${minute} 分钟`}
-              />
+                style={({ pressed }) => [
+                  styles.goalButton,
+                  active && styles.goalButtonActive,
+                  pressed && styles.goalButtonPressed,
+                ]}>
+                <Text style={[styles.goalButtonText, active && styles.goalButtonTextActive]}>
+                  {minute} 分钟
+                </Text>
+              </Pressable>
             );
           })}
         </View>
@@ -125,14 +130,17 @@ export default function ReportScreen() {
       </WhiteCard>
 
       <View style={styles.actionRow}>
-        <PrimaryButton onPress={() => router.push('/practice')} text="继续模考" />
-        <SecondaryButton
+        <Pressable onPress={() => router.push('/practice')} style={({ pressed }) => [styles.actionButtonPrimary, pressed && styles.goalButtonPressed]}>
+          <Text style={styles.actionButtonPrimaryText}>继续模考</Text>
+        </Pressable>
+        <Pressable
           onPress={() => {
             logout();
             router.replace('/login');
           }}
-          text="退出账号"
-        />
+          style={({ pressed }) => [styles.actionButtonSecondary, pressed && styles.goalButtonPressed]}>
+          <Text style={styles.actionButtonSecondaryText}>退出账号</Text>
+        </Pressable>
       </View>
     </AppScreen>
   );
@@ -140,30 +148,30 @@ export default function ReportScreen() {
 
 const styles = StyleSheet.create({
   hero: {
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 22,
+    padding: 18,
     gap: 10,
     backgroundColor: palette.green,
   },
   heroLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#EAF7EE',
+    color: '#EAF4FF',
   },
   heroScore: {
-    fontSize: 42,
+    fontSize: 38,
     fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: -1,
+    letterSpacing: -0.8,
   },
   heroDesc: {
     fontSize: 13,
     lineHeight: 19,
-    fontWeight: '500',
-    color: '#F3FBF6',
+    fontWeight: '600',
+    color: '#EAF4FF',
   },
   profileCard: {
-    padding: 16,
+    padding: 14,
   },
   profileHeader: {
     flexDirection: 'row',
@@ -180,7 +188,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
     color: palette.green,
   },
   profileText: {
@@ -189,7 +197,7 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: palette.text,
   },
   profileMeta: {
@@ -204,7 +212,7 @@ const styles = StyleSheet.create({
   },
   metricCard: {
     flex: 1,
-    padding: 16,
+    padding: 14,
     gap: 6,
   },
   metricLabel: {
@@ -213,31 +221,90 @@ const styles = StyleSheet.create({
     color: palette.muted,
   },
   metricValue: {
-    fontSize: 30,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
     color: palette.text,
   },
   card: {
-    padding: 18,
-    gap: 12,
+    padding: 16,
+    gap: 10,
   },
   cardTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '800',
     color: palette.text,
   },
   cardText: {
     fontSize: 13,
     lineHeight: 19,
-    fontWeight: '500',
+    fontWeight: '600',
     color: palette.muted,
   },
   goalRow: {
     flexDirection: 'row',
     gap: 10,
   },
+  goalButton: {
+    flex: 1,
+    minHeight: 96,
+    borderRadius: 38,
+    borderWidth: 1,
+    borderColor: '#C9DAEE',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  goalButtonActive: {
+    borderColor: '#A9C7EB',
+    backgroundColor: '#E3EEFC',
+  },
+  goalButtonPressed: {
+    opacity: 0.92,
+  },
+  goalButtonText: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: palette.text,
+    letterSpacing: -0.3,
+  },
+  goalButtonTextActive: {
+    color: palette.green,
+  },
   actionRow: {
     flexDirection: 'row',
     gap: 10,
+  },
+  actionButtonPrimary: {
+    flex: 1,
+    minHeight: 98,
+    borderRadius: 38,
+    backgroundColor: palette.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  actionButtonPrimaryText: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+  },
+  actionButtonSecondary: {
+    flex: 1,
+    minHeight: 98,
+    borderRadius: 38,
+    borderWidth: 1,
+    borderColor: '#C9DAEE',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  actionButtonSecondaryText: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: palette.text,
+    letterSpacing: -0.3,
   },
 });

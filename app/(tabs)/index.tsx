@@ -121,22 +121,23 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   hero: {
-    borderRadius: 20,
-    padding: 20,
-    gap: 12,
+    borderRadius: 22,
+    padding: 18,
+    gap: 10,
     backgroundColor: palette.green,
   },
   heroTitle: {
     color: '#FFFFFF',
     fontSize: 24,
-    fontWeight: '700',
+    lineHeight: 30,
+    fontWeight: '800',
     letterSpacing: -0.4,
   },
   heroDesc: {
-    color: '#F3FBF6',
+    color: '#EAF4FF',
     fontSize: 13,
-    lineHeight: 20,
-    fontWeight: '500',
+    lineHeight: 19,
+    fontWeight: '600',
   },
   heroMetaRow: {
     flexDirection: 'row',
@@ -147,10 +148,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: '#FFFFFF22',
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 6,
   },
   heroBadgeText: {
-    color: '#F3FBF6',
+    color: '#EAF4FF',
     fontSize: 12,
     fontWeight: '700',
   },
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
   },
   metricCard: {
     flex: 1,
-    padding: 16,
+    padding: 14,
     gap: 6,
   },
   metricLabel: {
@@ -169,26 +170,26 @@ const styles = StyleSheet.create({
     color: palette.muted,
   },
   metricValue: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     color: palette.text,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   card: {
-    padding: 18,
-    gap: 12,
+    padding: 16,
+    gap: 10,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: palette.text,
     letterSpacing: -0.2,
   },
   cardDesc: {
     fontSize: 13,
-    lineHeight: 20,
+    lineHeight: 19,
     color: palette.muted,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   buttonRow: {
     flexDirection: 'row',
@@ -196,9 +197,9 @@ const styles = StyleSheet.create({
   },
   tip: {
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 17,
     color: palette.muted,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   aiMetaRow: {
     flexDirection: 'row',
@@ -208,8 +209,8 @@ const styles = StyleSheet.create({
   aiBadge: {
     borderRadius: 999,
     backgroundColor: palette.greenTint,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
   aiBadgeText: {
     fontSize: 12,

@@ -4,18 +4,18 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const palette = {
-  bg: '#F5F4F1',
+  bg: '#EEF6FF',
   card: '#FFFFFF',
-  text: '#1A1918',
-  muted: '#6D6C6A',
-  line: '#E5E4E1',
-  green: '#3D8A5A',
-  greenSoft: '#C8F0D8',
-  greenTint: '#E7F4EB',
-  greenTextSoft: '#EAF7EE',
-  peach: '#FFF6F1',
-  peachText: '#D89575',
-  shadow: '#1A191808',
+  text: '#19365A',
+  muted: '#7A95B2',
+  line: '#D8E6F5',
+  green: '#2B74E4',
+  greenSoft: '#DCEAFF',
+  greenTint: '#EAF4FF',
+  greenTextSoft: '#F4F9FF',
+  peach: '#EEF3FF',
+  peachText: '#6688C2',
+  shadow: '#2059A61A',
 };
 
 type AppScreenProps = PropsWithChildren<{
@@ -185,9 +185,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 20,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingBottom: 176,
-    gap: 18,
+    gap: 16,
   },
   headerRow: {
     flexDirection: 'row',
@@ -197,15 +197,16 @@ const styles = StyleSheet.create({
   },
   pageTitle: {
     color: palette.text,
-    fontSize: 26,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.4,
   },
   subtitle: {
     marginTop: 4,
     color: palette.muted,
     fontSize: 13,
-    fontWeight: '500',
+    lineHeight: 19,
+    fontWeight: '600',
   },
   iconCircle: {
     width: 44,
@@ -214,24 +215,24 @@ const styles = StyleSheet.create({
     backgroundColor: palette.card,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#1A1918',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: '#16324F',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 4,
   },
   card: {
-    borderRadius: 16,
+    borderRadius: 20,
     backgroundColor: palette.card,
     padding: 16,
     gap: 8,
   },
   cardShadow: {
-    shadowColor: '#1A1918',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#16324F',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowRadius: 14,
+    elevation: 4,
   },
   cardBordered: {
     borderWidth: 1,
@@ -245,31 +246,31 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: palette.text,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   sectionAction: {
     color: palette.green,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   tag: {
     alignSelf: 'flex-start',
     borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   tagGreen: {
     backgroundColor: palette.greenSoft,
   },
   tagPeach: {
-    backgroundColor: '#FFF0E8',
+    backgroundColor: palette.peach,
   },
   tagLight: {
-    backgroundColor: '#EAF7EE',
+    backgroundColor: palette.greenTextSoft,
   },
   tagText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   tagTextGreen: {
     color: palette.green,
@@ -278,23 +279,23 @@ const styles = StyleSheet.create({
     color: palette.peachText,
   },
   tagTextLight: {
-    color: '#5C946F',
+    color: '#4E78B5',
   },
   primaryButton: {
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 999,
     backgroundColor: palette.green,
-    minHeight: 68,
+    minHeight: 54,
     paddingHorizontal: 20,
-    paddingVertical: 18,
+    paddingVertical: 14,
   },
   primaryButtonDisabled: {
     opacity: 0.45,
   },
   primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
   },
   secondaryButton: {
@@ -304,17 +305,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.line,
     backgroundColor: '#FFFFFF',
-    minHeight: 68,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
+    minHeight: 54,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
   },
   secondaryButtonSelected: {
-    borderColor: '#CFE8D8',
-    backgroundColor: '#EEF9F1',
+    borderColor: '#BDD3EE',
+    backgroundColor: '#EAF3FF',
   },
   secondaryButtonText: {
     color: palette.text,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
   },
   secondaryButtonTextSelected: {
@@ -332,12 +333,12 @@ const styles = StyleSheet.create({
   metaText: {
     color: palette.muted,
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   progressTrack: {
     height: 10,
     borderRadius: 999,
-    backgroundColor: '#EDECEA',
+    backgroundColor: '#DCE7F3',
     overflow: 'hidden',
   },
   progressValue: {

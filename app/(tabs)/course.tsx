@@ -206,11 +206,11 @@ export default function CourseScreen() {
 const styles = StyleSheet.create({
   directionCard: {
     padding: 16,
-    gap: 12,
+    gap: 10,
   },
   blockTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     color: palette.text,
   },
   directionRow: {
@@ -230,12 +230,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   directionChipActive: {
-    borderColor: '#CFE8D8',
-    backgroundColor: '#EEF9F1',
+    borderColor: '#BDD3EE',
+    backgroundColor: '#EAF3FF',
   },
   directionChipText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: palette.muted,
   },
   directionChipTextActive: {
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   },
   progressTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: palette.text,
   },
   progressText: {
@@ -263,20 +263,20 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   courseCardActive: {
-    backgroundColor: '#F8FCF9',
+    backgroundColor: '#F4F9FF',
     borderWidth: 1,
-    borderColor: '#CFE8D8',
+    borderColor: '#BDD3EE',
   },
   courseTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: palette.text,
   },
   courseDesc: {
     fontSize: 13,
     lineHeight: 20,
     color: palette.muted,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   pointRow: {
     flexDirection: 'row',
@@ -292,8 +292,8 @@ const styles = StyleSheet.create({
   },
   lessonCardActive: {
     borderWidth: 1,
-    borderColor: '#CFE8D8',
-    backgroundColor: '#F7FCF8',
+    borderColor: '#BDD3EE',
+    backgroundColor: '#F2F8FF',
   },
   lessonHead: {
     flexDirection: 'row',
@@ -313,14 +313,14 @@ const styles = StyleSheet.create({
   },
   lessonTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: palette.text,
   },
   lessonSummary: {
     fontSize: 13,
     lineHeight: 19,
     color: palette.muted,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   detailCard: {
     padding: 18,
@@ -328,14 +328,14 @@ const styles = StyleSheet.create({
   },
   detailTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
     color: palette.text,
   },
   detailDesc: {
     fontSize: 13,
     lineHeight: 20,
     color: palette.muted,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   highlightList: {
     gap: 10,
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   },
   sectionBlock: {
     borderRadius: 16,
-    backgroundColor: '#F8F8F6',
+    backgroundColor: '#F5F9FE',
     padding: 14,
     gap: 6,
   },
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
   riskText: {
     fontSize: 12,
     lineHeight: 18,
-    color: '#B16847',
+    color: '#6D89A7',
     fontWeight: '600',
   },
 });

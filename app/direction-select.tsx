@@ -53,36 +53,36 @@ export default function DirectionSelectScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingTop: 28,
-    gap: 16,
+    paddingTop: 32,
+    gap: 18,
   },
   header: {
-    gap: 10,
+    gap: 12,
   },
   title: {
-    fontSize: 30,
+    fontSize: 34,
     fontWeight: '800',
-    lineHeight: 34,
+    lineHeight: 40,
     color: palette.text,
-    letterSpacing: -0.7,
+    letterSpacing: -0.9,
   },
   subtitle: {
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 15,
+    lineHeight: 23,
     color: palette.muted,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   list: {
     gap: 12,
   },
   card: {
-    padding: 18,
-    gap: 10,
+    padding: 22,
+    gap: 12,
   },
   cardActive: {
-    backgroundColor: '#F2FBF5',
+    backgroundColor: '#EEF6FF',
     borderWidth: 1,
-    borderColor: '#CFE8D8',
+    borderColor: '#BDD3EE',
   },
   cardTop: {
     flexDirection: 'row',
@@ -93,21 +93,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 21,
+    fontWeight: '800',
     color: palette.text,
   },
   cardSubtitle: {
     marginTop: 4,
-    fontSize: 13,
+    fontSize: 14,
     color: palette.muted,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   target: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 14,
+    lineHeight: 21,
     color: palette.text,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   tagRow: {
     flexDirection: 'row',
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 999,
     borderWidth: 2,
-    borderColor: '#D7D6D2',
+    borderColor: '#B8C9DD',
     backgroundColor: '#FFFFFF',
   },
   radioActive: {
