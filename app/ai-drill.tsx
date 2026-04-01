@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -45,10 +47,12 @@ type ChatSession = {
 export default function AiDrillScreen() {
   const router = useRouter();
   const scrollRef = useRef<ScrollView | null>(null);
+  const inputRef = useRef<TextInput | null>(null);
+  const draftRef = useRef('');
   const { aiScenarios, saveAiSession } = useHuxuebao();
   const [selectedScenarioId, setSelectedScenarioId] = useState(aiScenarios[0]?.id ?? '');
   const [session, setSession] = useState<ChatSession | null>(null);
-  const [draft, setDraft] = useState('');
+  const [hasDraft, setHasDraft] = useState(false);
   const [errorText, setErrorText] = useState('');
 
   const selectedScenario =
@@ -67,7 +71,7 @@ export default function AiDrillScreen() {
       return;
     }
 
-    setDraft('');
+    clearComposer();
     setErrorText('');
     setSession(buildInitialSession(selectedScenario));
   }, [selectedScenarioId, selectedScenario]);
@@ -89,7 +93,7 @@ export default function AiDrillScreen() {
       return;
     }
 
-    const content = draft.trim();
+    const content = draftRef.current.trim();
 
     if (!content) {
       return;
@@ -114,7 +118,7 @@ export default function AiDrillScreen() {
           createScoreMessage('0分 输入不是有效处置方案，请重新输入'),
         ],
       });
-      setDraft('');
+      clearComposer();
       setErrorText('');
       return;
     }
@@ -134,7 +138,6 @@ export default function AiDrillScreen() {
       waiting: true,
       messages: nextHistory,
     });
-    setDraft('');
 
     try {
       const aiTurn = await requestAiTurn({
@@ -163,6 +166,7 @@ export default function AiDrillScreen() {
         createBubbleMessage(aiTurn.replyLabel, aiTurn.reply),
         createScoreMessage(aiTurn.scoreNote),
       ];
+      clearComposer();
       const isLastStep = session.stepIndex === selectedScenario.steps.length - 1;
 
       if (isLastStep) {
@@ -218,7 +222,7 @@ export default function AiDrillScreen() {
         waiting: false,
         messages: session.messages,
       });
-      setDraft(content);
+      inputRef.current?.focus();
     }
   };
 
@@ -227,9 +231,22 @@ export default function AiDrillScreen() {
       return;
     }
 
-    setDraft('');
+    clearComposer();
     setErrorText('');
     setSession(buildInitialSession(selectedScenario));
+  };
+
+  const handleDraftChange = (text: string) => {
+    draftRef.current = text;
+    const nextHasDraft = text.trim().length > 0;
+
+    setHasDraft((current) => (current === nextHasDraft ? current : nextHasDraft));
+  };
+
+  const clearComposer = () => {
+    draftRef.current = '';
+    setHasDraft(false);
+    inputRef.current?.clear();
   };
 
   if (!selectedScenario || !session) {
@@ -238,7 +255,11 @@ export default function AiDrillScreen() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={styles.safeArea}>
-      <View style={styles.screen}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
+        style={styles.keyboardShell}>
+        <View style={styles.screen}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.headerButton}>
             <Ionicons color="#27456B" name="arrow-back" size={24} />
@@ -299,6 +320,8 @@ export default function AiDrillScreen() {
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={styles.chatContent}
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           style={styles.chatScroll}>
           {session.messages.map((message) =>
@@ -378,27 +401,34 @@ export default function AiDrillScreen() {
           {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
           <View style={styles.composer}>
             <TextInput
+              ref={inputRef}
               editable={!session.completed && !session.waiting}
-              onChangeText={setDraft}
+              onChangeText={handleDraftChange}
+              onFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
+              onSubmitEditing={handleSend}
               placeholder="输入处置方案..."
               placeholderTextColor="#9AA9C3"
               style={styles.input}
-              value={draft}
               autoCorrect={false}
               autoCapitalize="none"
+              blurOnSubmit={false}
+              enablesReturnKeyAutomatically
+              returnKeyType="send"
+              selectionColor="#4E6CF8"
             />
             <Pressable
-              disabled={session.completed || session.waiting || !draft.trim()}
+              disabled={session.completed || session.waiting || !hasDraft}
               onPress={handleSend}
               style={[
                 styles.sendButton,
-                (session.completed || session.waiting || !draft.trim()) && styles.sendButtonDisabled,
+                (session.completed || session.waiting || !hasDraft) && styles.sendButtonDisabled,
               ]}>
               <Ionicons color="#FFFFFF" name="paper-plane-outline" size={22} />
             </Pressable>
           </View>
         </View>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -474,6 +504,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#EAF1FC',
+  },
+  keyboardShell: {
+    flex: 1,
   },
   screen: {
     flex: 1,
@@ -699,6 +732,7 @@ const styles = StyleSheet.create({
   },
   composerArea: {
     gap: 10,
+    paddingBottom: 4,
   },
   helperText: {
     fontSize: 12,
