@@ -141,7 +141,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               onPress={onPress}
               style={styles.tabBarItem}>
               <TabBarIcon
-                color={isFocused ? '#FFFFFF' : '#9C9B99'}
+                color={isFocused ? '#FFFFFF' : '#89A0B7'}
                 focused={isFocused}
                 icon={iconMap[route.name]}
                 label={label}
@@ -165,19 +165,19 @@ const styles = StyleSheet.create({
   tabBar: {
     width: '100%',
     maxWidth: 372,
-    minHeight: 92,
+    minHeight: 88,
     flexDirection: 'row',
     alignItems: 'stretch',
-    borderRadius: 40,
+    borderRadius: 34,
     borderWidth: 1,
-    borderColor: '#E8E4DD',
+    borderColor: '#D6E2EF',
     paddingHorizontal: 10,
-    paddingVertical: 10,
+    paddingVertical: 8,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#1A1918',
+    shadowColor: '#16324F',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 18,
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
     elevation: 8,
   },
   tabBarItem: {
@@ -186,19 +186,19 @@ const styles = StyleSheet.create({
   },
   tabItem: {
     flex: 1,
-    borderRadius: 32,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
+    gap: 6,
+    paddingVertical: 10,
   },
   tabItemActive: {
     backgroundColor: palette.green,
   },
   tabLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    lineHeight: 22,
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   tabLabelActive: {
     fontWeight: '700',

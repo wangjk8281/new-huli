@@ -1,325 +1,183 @@
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useMemo, useState, type ComponentProps } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   AppScreen,
   HeaderBlock,
-  PrimaryButton,
-  ProgressBar,
   SectionTitle,
   SecondaryButton,
   Tag,
   WhiteCard,
   palette,
 } from '@/components/huxuebao-ui';
-import { type PracticeMode, type Question } from '@/data/huxuebao-data';
 import { useHuxuebao } from '@/contexts/huxuebao-context';
 
-type SessionState = {
-  mode: PracticeMode;
-  questions: Question[];
-  index: number;
-  answerMap: Record<string, string[]>;
-  submittedQuestionIds: string[];
-  correctCount: number;
-  reviewingQuestionId?: string;
-};
-
-const modeConfig: {
-  mode: PracticeMode;
+type PracticeModule = {
+  key: string;
   title: string;
   subtitle: string;
-}[] = [
-  { mode: 'chapter', title: '章节练习', subtitle: '跟着课程章节刷题，边学边练' },
-  { mode: 'special', title: '专项练习', subtitle: '按弱项和高频知识点集中突破' },
-  { mode: 'random', title: '随机模拟', subtitle: '打散出题，适合下班前自测' },
-  { mode: 'exam', title: '模拟考试', subtitle: '限时组卷，交卷后统一出分' },
-];
+  badge: string;
+  sideLabel: string;
+  icon: ComponentProps<typeof Ionicons>['name'];
+  tone: 'green' | 'peach' | 'light';
+  onPress: () => void;
+};
 
 export default function PracticeScreen() {
   const router = useRouter();
-  const {
-    directionCourses,
-    questions,
-    examTemplates,
-    submitAnswer,
-    wrongQuestions,
-    weakPoints,
-    markWrongQuestionMastered,
-    saveExamResult,
-    latestExam,
-    aiScenarios,
-    latestAiSession,
-  } = useHuxuebao();
-  const [session, setSession] = useState<SessionState | null>(null);
-  const [lastFeedback, setLastFeedback] = useState<{ correct: boolean; explanation: string; recommendation: string } | null>(
-    null
-  );
+  const { wrongQuestions, weakPoints, latestExam, aiScenarios, latestAiSession, directionCourses } =
+    useHuxuebao();
+  const [selectedScenarioId, setSelectedScenarioId] = useState(aiScenarios[0]?.id ?? '');
+  const scenario =
+    useMemo(
+      () => aiScenarios.find((item) => item.id === selectedScenarioId) ?? aiScenarios[0],
+      [aiScenarios, selectedScenarioId]
+    );
 
-  const questionPool = useMemo(
-    () =>
-      questions.filter((question) =>
-        directionCourses.some((course) => course.id === question.courseId)
-      ),
-    [directionCourses, questions]
-  );
-
-  const currentQuestion = session ? session.questions[session.index] : null;
-  const selectedIds = currentQuestion ? session?.answerMap[currentQuestion.id] ?? [] : [];
-  const examTemplate = examTemplates[0];
-
-  const buildSession = (mode: PracticeMode) => {
-    let pool: Question[] = [];
-
-    if (mode === 'exam') {
-      pool = examTemplate.questionIds
-        .map((questionId) => questionPool.find((question) => question.id === questionId))
-        .filter(Boolean) as Question[];
-    } else {
-      pool = questionPool.filter((question) => question.modes.includes(mode));
-      if (mode === 'special' && weakPoints[0]) {
-        pool = [
-          ...pool.filter((question) => question.knowledgePoint === weakPoints[0]?.knowledgePoint),
-          ...pool.filter((question) => question.knowledgePoint !== weakPoints[0]?.knowledgePoint),
-        ];
-      }
-      pool = pool.slice(0, 4);
-    }
-
-    setLastFeedback(null);
-    setSession({
-      mode,
-      questions: pool,
-      index: 0,
-      answerMap: {},
-      submittedQuestionIds: [],
-      correctCount: 0,
-      reviewingQuestionId: undefined,
-    });
-  };
-
-  const updateSelection = (optionId: string) => {
-    if (!session || !currentQuestion) {
-      return;
-    }
-
-    if (session.reviewingQuestionId === currentQuestion.id) {
-      return;
-    }
-
-    const current = session.answerMap[currentQuestion.id] ?? [];
-    const next =
-      currentQuestion.type === 'multiple'
-        ? current.includes(optionId)
-          ? current.filter((id) => id !== optionId)
-          : [...current, optionId]
-        : [optionId];
-
-    setSession({
-      ...session,
-      answerMap: {
-        ...session.answerMap,
-        [currentQuestion.id]: next,
-      },
-    });
-  };
-
-  const submitCurrent = () => {
-    if (!session || !currentQuestion || selectedIds.length === 0) {
-      return;
-    }
-
-    if (session.reviewingQuestionId === currentQuestion.id) {
-      setLastFeedback(null);
-      setSession({
-        ...session,
-        index: session.index + 1,
-        reviewingQuestionId: undefined,
-      });
-      return;
-    }
-
-    const correct = submitAnswer(currentQuestion.id, selectedIds, session.mode);
-    const nextCorrectCount = session.correctCount + (correct ? 1 : 0);
-    const submittedQuestionIds = [...session.submittedQuestionIds, currentQuestion.id];
-
-    setLastFeedback({
-      correct,
-      explanation: currentQuestion.explanation,
-      recommendation: currentQuestion.recommendation,
-    });
-
-    if (session.index === session.questions.length - 1) {
-      if (session.mode === 'exam') {
-        saveExamResult(examTemplate.id, nextCorrectCount, session.questions.length);
-      }
-
-      setSession({
-        ...session,
-        correctCount: nextCorrectCount,
-        submittedQuestionIds,
-        reviewingQuestionId: currentQuestion.id,
-      });
-      return;
-    }
-
-    setSession({
-      ...session,
-      correctCount: nextCorrectCount,
-      submittedQuestionIds,
-      reviewingQuestionId: currentQuestion.id,
-    });
-  };
-
-  const sessionFinished =
-    !!session && session.submittedQuestionIds.length === session.questions.length;
+  const modules: PracticeModule[] = [
+    {
+      key: 'chapter',
+      title: '章节练习',
+      subtitle: '跟着课程章节刷题，边学边练',
+      badge: '立即开始',
+      sideLabel: `${directionCourses.length} 门课`,
+      icon: 'book-outline',
+      tone: 'green',
+      onPress: () => router.push({ pathname: '/practice-session', params: { mode: 'chapter' } }),
+    },
+    {
+      key: 'special',
+      title: '专项练习',
+      subtitle: '按弱项和高频知识点集中突破',
+      badge: '重点强化',
+      sideLabel: `${weakPoints.length} 个弱点`,
+      icon: 'medkit-outline',
+      tone: 'light',
+      onPress: () => router.push({ pathname: '/practice-session', params: { mode: 'special' } }),
+    },
+    {
+      key: 'random',
+      title: '随机模拟',
+      subtitle: '打散出题，适合下班前自测',
+      badge: '快速刷题',
+      sideLabel: '4 题快测',
+      icon: 'shuffle-outline',
+      tone: 'light',
+      onPress: () => router.push({ pathname: '/practice-session', params: { mode: 'random' } }),
+    },
+    {
+      key: 'exam',
+      title: '模拟考试',
+      subtitle: '限时组卷，交卷后统一出分',
+      badge: '限时出分',
+      sideLabel: latestExam ? `最近 ${latestExam.score} 分` : '目标 85 分',
+      icon: 'document-text-outline',
+      tone: 'peach',
+      onPress: () => router.push({ pathname: '/practice-session', params: { mode: 'exam' } }),
+    },
+    {
+      key: 'wrong-book',
+      title: '错题回刷',
+      subtitle: '回看做错题目，逐个消灭易错点',
+      badge: wrongQuestions.length > 0 ? '待回顾' : '已清空',
+      sideLabel: `${wrongQuestions.length} 题`,
+      icon: 'refresh-circle-outline',
+      tone: wrongQuestions.length > 0 ? 'peach' : 'light',
+      onPress: () => router.push('/wrong-book'),
+    },
+    {
+      key: 'weak-points',
+      title: '薄弱点强化',
+      subtitle: '按正确率排序，优先补齐短板',
+      badge: '自动分析',
+      sideLabel: weakPoints[0] ? `${weakPoints[0].accuracy}%` : '等待生成',
+      icon: 'analytics-outline',
+      tone: 'green',
+      onPress: () => router.push('/weak-points'),
+    },
+  ];
 
   return (
     <AppScreen>
-      <HeaderBlock title="练习中心" subtitle="章节练习、错题回刷、薄弱点强化和模拟考试" />
+      <HeaderBlock title="练习中心" subtitle="六种练习入口，按今天的学习目标直接开始" />
 
-      <SectionTitle action={latestAiSession ? `${latestAiSession.accuracy}% 完成度` : '完整演练'} title="AI 情景演练" />
-      <WhiteCard style={styles.listCard}>
-        <Tag text={`${aiScenarios[0].department} · ${aiScenarios[0].level}`} tone="peach" />
-        <Text style={styles.listTitle}>{aiScenarios[0].title}</Text>
-        <Text style={styles.listText}>{latestAiSession ? latestAiSession.nextAction : aiScenarios[0].objective}</Text>
-        <Text style={styles.listText}>评分方式：{aiScenarios[0].scoreRule}</Text>
-        <View style={styles.aiActionRow}>
-          <Tag text={`${aiScenarios[0].steps.length} 轮`} tone="light" />
-          <Pressable onPress={() => router.push('/ai-drill')} style={({ pressed }) => [styles.aiCta, pressed && styles.aiCtaPressed]}>
-            <View style={styles.aiCtaTextWrap}>
-              <Text style={styles.aiCtaEyebrow}>{latestAiSession ? '上次进度已保存' : '真人对话式演练'}</Text>
-              <Text style={styles.aiCtaText}>{latestAiSession ? '继续演练' : '立即开始'}</Text>
-            </View>
-            <View style={styles.aiCtaArrow}>
-              <Ionicons color="#2F7E52" name="arrow-forward" size={18} />
-            </View>
-          </Pressable>
+      <SectionTitle
+        action={latestAiSession ? `${latestAiSession.accuracy}% 完成度` : '完整演练'}
+        title="AI 情景演练"
+      />
+      <WhiteCard style={styles.aiCard}>
+        <View style={styles.aiCardLeft}>
+          <Tag text={`${scenario.department} · ${scenario.level}`} tone="peach" />
+          <Text style={styles.aiTitle}>{scenario.title}</Text>
+          <Text style={styles.aiText}>
+            {latestAiSession ? latestAiSession.nextAction : scenario.objective}
+          </Text>
+          <Text style={styles.aiText}>评分方式：{scenario.scoreRule}</Text>
         </View>
+        <Pressable
+          onPress={() => router.push({ pathname: '/ai-drill', params: { scenarioId: scenario.id } })}
+          style={({ pressed }) => [styles.aiCta, pressed && styles.modulePressed]}>
+          <View style={styles.aiCtaIcon}>
+            <Ionicons color="#FFFFFF" name="chatbubbles-outline" size={22} />
+          </View>
+          <Text style={styles.aiCtaLabel}>{latestAiSession ? '继续演练' : '立即开始'}</Text>
+        </Pressable>
       </WhiteCard>
 
-      <View style={styles.modeList}>
-        {modeConfig.map((item) => (
-          <Pressable key={item.mode} onPress={() => buildSession(item.mode)}>
-            <WhiteCard bordered={session?.mode !== item.mode} style={styles.modeCard}>
-              <Tag text={item.mode === 'exam' ? '限时出分' : '立即开始'} tone={item.mode === 'exam' ? 'peach' : 'green'} />
-              <Text style={styles.modeTitle}>{item.title}</Text>
-              <Text style={styles.modeSubtitle}>{item.subtitle}</Text>
-            </WhiteCard>
+      <View style={styles.scenarioSwitch}>
+        {aiScenarios.map((item) => {
+          const active = item.id === scenario.id;
+
+          return (
+            <Pressable
+              key={item.id}
+              onPress={() => setSelectedScenarioId(item.id)}
+              style={({ pressed }) => [
+                styles.scenarioChip,
+                active && styles.scenarioChipActive,
+                pressed && styles.modulePressed,
+              ]}>
+              <Text style={[styles.scenarioChipText, active && styles.scenarioChipTextActive]}>
+                {item.title}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <SectionTitle action="6 个入口" title="练习模块" />
+      <View style={styles.moduleList}>
+        {modules.map((item) => (
+          <Pressable key={item.key} onPress={item.onPress}>
+            {({ pressed }) => (
+              <WhiteCard style={[styles.moduleCard, pressed && styles.modulePressed]}>
+                <View style={styles.moduleMain}>
+                  <Tag text={item.badge} tone={item.tone} />
+                  <Text style={styles.moduleTitle}>{item.title}</Text>
+                  <Text style={styles.moduleSubtitle}>{item.subtitle}</Text>
+                </View>
+                <View style={styles.moduleSide}>
+                  <View style={styles.moduleIconWrap}>
+                    <Ionicons color={palette.green} name={item.icon} size={24} />
+                  </View>
+                  <Text style={styles.moduleSideLabel}>{item.sideLabel}</Text>
+                  <Ionicons color="#8FA5BC" name="chevron-forward" size={18} />
+                </View>
+              </WhiteCard>
+            )}
           </Pressable>
         ))}
       </View>
 
-      {currentQuestion && session && !sessionFinished ? (
-        <WhiteCard style={styles.sessionCard}>
-          <View style={styles.sessionHead}>
-            <Tag text={modeConfig.find((item) => item.mode === session.mode)?.title ?? '练习'} tone="green" />
-            <Text style={styles.sessionProgress}>
-              第 {session.index + 1} / {session.questions.length} 题
-            </Text>
-          </View>
-          <Text style={styles.questionStem}>{currentQuestion.stem}</Text>
-          <Text style={styles.tipText}>
-            {currentQuestion.type === 'multiple' ? '本题可多选' : '本题单选'}
-          </Text>
-
-          <View style={styles.optionList}>
-            {currentQuestion.options.map((option) => {
-              const active = selectedIds.includes(option.id);
-
-              return (
-                <Pressable key={option.id} onPress={() => updateSelection(option.id)}>
-                  <View
-                    style={[
-                      styles.optionCard,
-                      active && styles.optionCardActive,
-                      session.reviewingQuestionId === currentQuestion.id && styles.optionCardLocked,
-                    ]}>
-                    <View style={[styles.optionMark, active && styles.optionMarkActive]} />
-                    <Text style={[styles.optionText, active && styles.optionTextActive]}>{option.text}</Text>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <PrimaryButton
-            disabled={selectedIds.length === 0}
-            onPress={submitCurrent}
-            text={
-              session.reviewingQuestionId === currentQuestion.id
-                ? '下一题'
-                : session.index === session.questions.length - 1
-                  ? '提交并完成'
-                  : '提交本题'
-            }
+      <View style={styles.switchRow}>
+        {aiScenarios.map((item) => (
+          <SecondaryButton
+            key={item.id}
+            onPress={() => router.push({ pathname: '/ai-drill', params: { scenarioId: item.id } })}
+            text={item.department}
           />
-
-          {lastFeedback ? (
-            <View style={[styles.feedbackBox, lastFeedback.correct ? styles.correctBox : styles.wrongBox]}>
-              <Text style={styles.feedbackTitle}>{lastFeedback.correct ? '回答正确' : '需要回看'}</Text>
-              <Text style={styles.feedbackText}>{lastFeedback.explanation}</Text>
-              <Text style={styles.feedbackTip}>{lastFeedback.recommendation}</Text>
-            </View>
-          ) : null}
-        </WhiteCard>
-      ) : null}
-
-      {sessionFinished && session ? (
-        <WhiteCard style={styles.resultCard}>
-          <Tag text={session.mode === 'exam' ? '模拟考试结果' : '本轮练习完成'} tone="light" />
-          <Text style={styles.resultScore}>
-            {session.mode === 'exam'
-              ? `${Math.round((session.correctCount / session.questions.length) * 100)} 分`
-              : `答对 ${session.correctCount} / ${session.questions.length} 题`}
-          </Text>
-          <Text style={styles.resultText}>
-            {session.mode === 'exam'
-              ? `最新模考 ${latestExam?.score ?? 0} 分，目标证书：${examTemplate.targetCertificate}`
-              : '系统已同步更新错题本和薄弱点分析。'}
-          </Text>
-          <View style={styles.buttonRow}>
-            <PrimaryButton onPress={() => setSession(null)} text="返回练习中心" />
-            <SecondaryButton onPress={() => buildSession(session.mode)} text="再来一轮" />
-          </View>
-        </WhiteCard>
-      ) : null}
-
-      <SectionTitle action={`${wrongQuestions.length} 题`} title="错题本" />
-      <View style={styles.stack}>
-        {wrongQuestions.length === 0 ? (
-          <WhiteCard style={styles.emptyCard}>
-            <Text style={styles.emptyText}>当前没有待回顾错题，继续做题会自动更新这里。</Text>
-          </WhiteCard>
-        ) : (
-          wrongQuestions.slice(0, 3).map((question) => (
-            <WhiteCard key={question.id} style={styles.listCard}>
-              <Text style={styles.listTitle}>{question.stem}</Text>
-              <Text style={styles.listText}>{question.explanation}</Text>
-              <View style={styles.buttonRow}>
-                <Tag text={question.knowledgePoint} tone="peach" />
-                <SecondaryButton onPress={() => markWrongQuestionMastered(question.id)} text="标记已掌握" />
-              </View>
-            </WhiteCard>
-          ))
-        )}
-      </View>
-
-      <SectionTitle action="自动生成" title="薄弱点分析" />
-      <View style={styles.stack}>
-        {weakPoints.slice(0, 3).map((weakPoint) => (
-          <WhiteCard key={weakPoint.knowledgePoint} style={styles.listCard}>
-            <View style={styles.sessionHead}>
-              <Text style={styles.listTitle}>{weakPoint.knowledgePoint}</Text>
-              <Text style={styles.sessionProgress}>{weakPoint.accuracy}%</Text>
-            </View>
-            <ProgressBar value={weakPoint.accuracy} />
-            <Text style={styles.listText}>
-              连续答题 {weakPoint.total} 次，答对 {weakPoint.correct} 次。建议：{weakPoint.recommendation}
-            </Text>
-          </WhiteCard>
         ))}
       </View>
     </AppScreen>
@@ -327,214 +185,131 @@ export default function PracticeScreen() {
 }
 
 const styles = StyleSheet.create({
-  aiActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
+  aiCard: {
+    padding: 16,
+    gap: 14,
+  },
+  aiCardLeft: {
+    gap: 8,
+  },
+  aiTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '800',
+    color: palette.text,
+  },
+  aiText: {
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '600',
+    color: palette.muted,
   },
   aiCta: {
-    minWidth: 188,
+    minHeight: 52,
+    borderRadius: 16,
+    backgroundColor: palette.green,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 14,
-    borderRadius: 24,
-    backgroundColor: '#2F7E52',
-    paddingLeft: 18,
-    paddingRight: 10,
-    paddingVertical: 12,
-    shadowColor: '#2F7E52',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 4,
+    justifyContent: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
   },
-  aiCtaPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
-  },
-  aiCtaTextWrap: {
-    gap: 2,
-  },
-  aiCtaEyebrow: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#CFEBD9',
-  },
-  aiCtaText: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.4,
-  },
-  aiCtaArrow: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#F2F8F4',
+  aiCtaIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#FFFFFF22',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modeList: {
-    gap: 12,
+  aiCtaLabel: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
-  modeCard: {
-    padding: 16,
+  scenarioSwitch: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
+    marginTop: -4,
   },
-  modeTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: palette.text,
-  },
-  modeSubtitle: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: palette.muted,
-    fontWeight: '500',
-  },
-  sessionCard: {
-    padding: 18,
-    gap: 14,
-  },
-  sessionHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  sessionProgress: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: palette.green,
-  },
-  questionStem: {
-    fontSize: 18,
-    lineHeight: 26,
-    fontWeight: '700',
-    color: palette.text,
-  },
-  tipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: palette.muted,
-  },
-  optionList: {
-    gap: 10,
-  },
-  optionCard: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-    borderRadius: 16,
+  scenarioChip: {
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: palette.line,
     backgroundColor: '#FFFFFF',
-    padding: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  optionCardActive: {
-    borderColor: '#CFE8D8',
-    backgroundColor: '#F4FBF6',
+  scenarioChipActive: {
+    borderColor: '#A9C7EB',
+    backgroundColor: '#EAF4FF',
   },
-  optionCardLocked: {
-    opacity: 0.7,
-  },
-  optionMark: {
-    width: 18,
-    height: 18,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: '#CAC9C5',
-    backgroundColor: '#FFFFFF',
-  },
-  optionMarkActive: {
-    borderColor: palette.green,
-    backgroundColor: palette.green,
-  },
-  optionText: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 21,
-    color: palette.text,
-    fontWeight: '500',
-  },
-  optionTextActive: {
-    fontWeight: '700',
-  },
-  feedbackBox: {
-    borderRadius: 16,
-    padding: 14,
-    gap: 6,
-  },
-  correctBox: {
-    backgroundColor: palette.greenTint,
-  },
-  wrongBox: {
-    backgroundColor: '#FFF5EE',
-  },
-  feedbackTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: palette.text,
-  },
-  feedbackText: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: palette.text,
-    fontWeight: '500',
-  },
-  feedbackTip: {
+  scenarioChipText: {
     fontSize: 12,
-    lineHeight: 18,
+    fontWeight: '700',
     color: palette.muted,
-    fontWeight: '500',
   },
-  resultCard: {
-    padding: 18,
+  scenarioChipTextActive: {
+    color: palette.green,
+  },
+  moduleList: {
     gap: 12,
   },
-  resultScore: {
-    fontSize: 34,
+  moduleCard: {
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+    minHeight: 116,
+  },
+  moduleMain: {
+    flex: 1,
+    gap: 8,
+  },
+  moduleTitle: {
+    fontSize: 18,
     fontWeight: '800',
     color: palette.text,
-    letterSpacing: -0.8,
+    letterSpacing: -0.2,
   },
-  resultText: {
+  moduleSubtitle: {
     fontSize: 13,
     lineHeight: 19,
+    fontWeight: '600',
     color: palette.muted,
-    fontWeight: '500',
   },
-  stack: {
-    gap: 12,
-  },
-  listCard: {
-    padding: 16,
+  moduleSide: {
+    width: 88,
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 10,
+    alignSelf: 'stretch',
+    borderRadius: 16,
+    backgroundColor: palette.greenTextSoft,
+    paddingVertical: 14,
   },
-  listTitle: {
-    fontSize: 15,
-    lineHeight: 22,
+  moduleIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moduleSideLabel: {
+    fontSize: 11,
+    lineHeight: 16,
     fontWeight: '700',
-    color: palette.text,
+    color: palette.green,
+    textAlign: 'center',
+    paddingHorizontal: 6,
   },
-  listText: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: palette.muted,
-    fontWeight: '500',
+  modulePressed: {
+    opacity: 0.94,
   },
-  emptyCard: {
-    padding: 16,
-  },
-  emptyText: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: palette.muted,
-    fontWeight: '500',
-  },
-  buttonRow: {
+  switchRow: {
     flexDirection: 'row',
     gap: 10,
   },

@@ -28,7 +28,7 @@ export default function LoginScreen() {
         <TextInput
           onChangeText={setName}
           placeholder="请输入护士姓名"
-          placeholderTextColor="#A7A6A3"
+          placeholderTextColor="#8CA1B9"
           style={styles.input}
           value={name}
         />
@@ -49,27 +49,28 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingTop: 28,
+    paddingTop: 32,
     justifyContent: 'center',
   },
   hero: {
-    gap: 14,
+    gap: 16,
+    paddingVertical: 10,
   },
   title: {
-    fontSize: 48,
+    fontSize: 52,
     fontWeight: '800',
     color: palette.text,
-    letterSpacing: -1.2,
+    letterSpacing: -1.5,
   },
   subtitle: {
-    fontSize: 18,
-    lineHeight: 28,
+    fontSize: 19,
+    lineHeight: 30,
     color: palette.muted,
     fontWeight: '600',
   },
   card: {
-    padding: 22,
-    gap: 18,
+    padding: 24,
+    gap: 20,
   },
   label: {
     fontSize: 16,
@@ -77,21 +78,21 @@ const styles = StyleSheet.create({
     color: palette.text,
   },
   input: {
-    borderRadius: 14,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: palette.line,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     paddingVertical: 18,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: palette.text,
   },
   infoBlock: {
-    borderRadius: 16,
-    backgroundColor: palette.greenTint,
+    borderRadius: 22,
+    backgroundColor: palette.greenTextSoft,
     padding: 18,
-    gap: 8,
+    gap: 10,
   },
   infoTitle: {
     fontSize: 18,

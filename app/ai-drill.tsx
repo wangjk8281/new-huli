@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Pressable,
@@ -44,12 +44,19 @@ type ChatSession = {
 
 export default function AiDrillScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ scenarioId?: string }>();
   const scrollRef = useRef<ScrollView | null>(null);
   const { aiScenarios, saveAiSession } = useHuxuebao();
-  const [selectedScenarioId, setSelectedScenarioId] = useState(aiScenarios[0]?.id ?? '');
+  const [selectedScenarioId, setSelectedScenarioId] = useState(params.scenarioId ?? aiScenarios[0]?.id ?? '');
   const [session, setSession] = useState<ChatSession | null>(null);
   const [draft, setDraft] = useState('');
   const [errorText, setErrorText] = useState('');
+
+  useEffect(() => {
+    if (typeof params.scenarioId === 'string' && params.scenarioId !== selectedScenarioId) {
+      setSelectedScenarioId(params.scenarioId);
+    }
+  }, [params.scenarioId, selectedScenarioId]);
 
   const selectedScenario =
     aiScenarios.find((scenario) => scenario.id === selectedScenarioId) ?? aiScenarios[0];
@@ -241,7 +248,7 @@ export default function AiDrillScreen() {
       <View style={styles.screen}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.headerButton}>
-            <Ionicons color="#27456B" name="arrow-back" size={24} />
+            <Ionicons color="#285D97" name="arrow-back" size={24} />
           </Pressable>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>AI情景演练</Text>
@@ -250,7 +257,7 @@ export default function AiDrillScreen() {
             </Text>
           </View>
           <View style={styles.headerButton}>
-            <Ionicons color="#4E79F7" name="help-circle-outline" size={26} />
+            <Ionicons color="#4F82C9" name="help-circle-outline" size={26} />
           </View>
         </View>
 
@@ -305,7 +312,7 @@ export default function AiDrillScreen() {
             message.kind === 'score' ? (
               <View key={message.id} style={styles.scoreRow}>
                 <View style={styles.scoreChip}>
-                  <Ionicons color="#15A34A" name="checkmark-circle" size={20} />
+                  <Ionicons color="#2E6FBE" name="checkmark-circle" size={20} />
                   <Text style={styles.scoreChipText}>{message.text}</Text>
                 </View>
               </View>
@@ -473,11 +480,11 @@ function uniqueList(items: string[]) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#EAF1FC',
+    backgroundColor: '#F0F6FD',
   },
   screen: {
     flex: 1,
-    backgroundColor: '#EAF1FC',
+    backgroundColor: '#F0F6FD',
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 12,
@@ -494,7 +501,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFFCC',
+    backgroundColor: '#FFFFFFD9',
   },
   headerCenter: {
     flex: 1,
@@ -504,12 +511,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#223C63',
+    color: '#16324F',
   },
   headerSubtitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8A9AB8',
+    color: '#6F87A3',
   },
   scenarioSwitch: {
     flexDirection: 'row',
@@ -530,7 +537,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#FA7E94',
+    backgroundColor: '#6CA8E8',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -541,13 +548,13 @@ const styles = StyleSheet.create({
   patientName: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#223C63',
+    color: '#16324F',
   },
   patientComplaint: {
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '600',
-    color: '#8A9AB8',
+    color: '#6F87A3',
   },
   vitalGrid: {
     flexDirection: 'row',
@@ -556,7 +563,7 @@ const styles = StyleSheet.create({
   vitalCard: {
     flex: 1,
     borderRadius: 18,
-    backgroundColor: '#F6F8FC',
+    backgroundColor: '#F6FAFE',
     paddingVertical: 12,
     alignItems: 'center',
     gap: 4,
@@ -564,18 +571,18 @@ const styles = StyleSheet.create({
   vitalValue: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#2E4C77',
+    color: '#285D97',
   },
   vitalValueDanger: {
-    color: '#F35C5C',
+    color: '#D85C6F',
   },
   vitalValueWarning: {
-    color: '#F59E0B',
+    color: '#B98528',
   },
   vitalLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#95A5BF',
+    color: '#7F96B2',
   },
   chatScroll: {
     flex: 1,
@@ -598,10 +605,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   messageLabelAi: {
-    color: '#98A8C0',
+    color: '#8AA1BC',
   },
   messageLabelUser: {
-    color: '#8498B7',
+    color: '#6E88A4',
   },
   messageBubble: {
     maxWidth: '88%',
@@ -614,14 +621,14 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 8,
   },
   messageBubbleUser: {
-    backgroundColor: '#4E6CF8',
+    backgroundColor: '#2E6FBE',
     borderTopRightRadius: 8,
   },
   messageText: {
     fontSize: 15,
     lineHeight: 24,
     fontWeight: '700',
-    color: '#223C63',
+    color: '#16324F',
   },
   messageTextUser: {
     color: '#FFFFFF',
@@ -635,15 +642,15 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#9EE6B3',
-    backgroundColor: '#E9FBEF',
+    borderColor: '#BDD3EE',
+    backgroundColor: '#EDF5FF',
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   scoreChipText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#15803D',
+    color: '#2E6FBE',
   },
   summaryCard: {
     padding: 16,
@@ -659,43 +666,43 @@ const styles = StyleSheet.create({
   summaryScore: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#223C63',
+    color: '#16324F',
   },
   summaryText: {
     fontSize: 14,
     lineHeight: 21,
     fontWeight: '600',
-    color: '#61748F',
+    color: '#69839F',
   },
   summaryLabel: {
     marginTop: 4,
     fontSize: 13,
     fontWeight: '800',
-    color: '#223C63',
+    color: '#16324F',
   },
   summaryItem: {
     fontSize: 13,
     lineHeight: 20,
     fontWeight: '600',
-    color: '#61748F',
+    color: '#69839F',
   },
   summaryAdvice: {
     fontSize: 14,
     lineHeight: 21,
     fontWeight: '700',
-    color: '#355CA8',
+    color: '#2E6FBE',
   },
   restartButton: {
     marginTop: 6,
     borderRadius: 16,
-    backgroundColor: '#EEF4FF',
+    backgroundColor: '#EAF3FF',
     alignItems: 'center',
     paddingVertical: 12,
   },
   restartButtonText: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#355CA8',
+    color: '#2E6FBE',
   },
   composerArea: {
     gap: 10,
@@ -704,13 +711,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     fontWeight: '600',
-    color: '#8FA1BE',
+    color: '#7B93AF',
   },
   errorText: {
     fontSize: 12,
     lineHeight: 18,
     fontWeight: '700',
-    color: '#D9485F',
+    color: '#C44C64',
   },
   composer: {
     flexDirection: 'row',
@@ -722,7 +729,7 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     borderWidth: 1,
-    borderColor: '#D5DFF0',
+    borderColor: '#CCD9E8',
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
     fontSize: 16,
@@ -735,7 +742,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4E6CF8',
+    backgroundColor: '#2E6FBE',
   },
   sendButtonDisabled: {
     opacity: 0.45,
